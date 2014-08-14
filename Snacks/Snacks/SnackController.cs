@@ -32,6 +32,29 @@ namespace Snacks
         void Start()
         {
             Debug.Log("Snacks start:" + Time.time);
+            GameEvents.onCrewOnEva.Add(OnCrewOnEva);
+            GameEvents.onCrewBoardVessel.Add(OnCrewBoardVessel);
+        }
+
+        private void OnCrewBoardVessel(GameEvents.FromToAction<Part, Part> data)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void OnCrewOnEva(GameEvents.FromToAction<Part, Part> data)
+        {
+            Debug.Log("EVA start");
+            double got = data.from.RequestResource(snacksResource.id, 1f);
+            Debug.Log("EVA Got:" + got);
+            //ConfigNode node = new ConfigNode("RESOURCE");
+            //node.AddValue("name", "Snacks");
+            //node.AddValue("amount ", got);
+            //node.AddValue("maxAmount ", "1");
+            //node.AddValue("flowState ", "True");
+            //node.AddValue("isTweakable ", "False");
+            //node.AddValue("hideFlow ", "False");
+           // node.AddValue("flowMode  ", "both");
+            data.to.RequestResource(snacksResource.id, -1 * got);
         }
 
         /*
@@ -54,8 +77,6 @@ namespace Snacks
 
             double currentTime = Planetarium.GetUniversalTime();
 
-            //if (currentTime > dayStartTime + secondsInDay)
-            // oncePerDayUpdate();
 
             if (currentTime > snackTime)
             {
@@ -71,28 +92,24 @@ namespace Snacks
 
         }
 
-        bool TryRemoveSnacks(ProtoVessel pv, double request)
+        int TryRemoveSnacks(ProtoVessel pv, double request)
         {
-            Debug.Log("tryremove 1");
             double supplied = 0;
             foreach (ProtoPartSnapshot pps in pv.protoPartSnapshots)
             {
-                Debug.Log("tryremove 2");
                 var res = from r in pps.resources
                           where r.resourceName == "Snacks"
                           select r;
                 if (res.Count() > 0)
                 {
-                    Debug.Log("tryremove 3");
                     //Debug.Log(res.First().resourceValues);
                     ConfigNode node = res.First().resourceValues;
                     double amount = Double.Parse(node.GetValue("amount"));
-                    Debug.Log("tryremove 4");
                     if (amount >= request)
                     {
                         node.SetValue("amount", (amount -= request).ToString());
                         Debug.Log("removed snacks from: " + pv.vesselName);
-                        return true;//met request
+                        return 0;//met request
                     }
                     else
                     {
@@ -104,82 +121,50 @@ namespace Snacks
 
             }
 
-            return false;
+            return pv.GetVesselCrew().Count;
         }
 
 
-        bool TryRemoveSnacks(Vessel pv, double request)
+        int TryRemoveSnacks(Vessel v, double request)
         {
+            List<PartResource> resources = new List<PartResource>();
+            v.rootPart.GetConnectedResources(snacksResource.id, resources);
+
+            double demand = 1 * v.GetCrewCount();
             double supplied = 0;
-
-
-
-            return false;
-        }
-
-        void oncePerDayUpdate()
-        {
-            Debug.Log("Once per day update:" + Time.time);
-            dayStartTime = Planetarium.GetUniversalTime();
-            int fastingCrew = 0;
-            foreach (ProtoVessel pv in HighLogic.CurrentGame.flightState.protoVessels)
+            foreach (PartResource res in resources)
             {
-                if (pv.GetVesselCrew().Count > 0)
-                {
-                    // Debug.Log("snacks name" + pv.vesselName);
-                    // Debug.Log("snacks vessel ref" + pv.vesselRef);
-
-
-
-
-                }
-
-
-            }
-            if (fastingCrew > 0)
-            {
-                Reputation.Instance.AddReputation(-1f * fastingCrew, fastingCrew + " Kerbals out of snacks!");
-                ScreenMessages.PostScreenMessage(fastingCrew + " Kerbals out of snacks(reputation decreased by " + fastingCrew + ")");
+                Debug.Log("eating snacks for v:" + v.vesselName);
+                supplied = res.amount >= demand ? demand : res.amount;
+                res.amount -= supplied;
+                demand = demand - supplied;
+                if (supplied >= demand)
+                    return 0;//we supplied enough snacks
             }
 
-
+            return v.GetCrewCount();
         }
 
         void EatSnacks()
         {
+            int fastingKerbals = 0;
             foreach (ProtoVessel pv in HighLogic.CurrentGame.flightState.protoVessels)
             {
-                Debug.Log("es1:" + pv.vesselName);
-                Debug.Log("es2:" + pv.GetVesselCrew().Count);
                 if (pv.GetVesselCrew().Count > 0)
                 {
-                    Debug.Log("es3");
                     Debug.Log(pv.vesselRef);
                     if (!pv.vesselRef.loaded)
-                    {
-                        Debug.Log("es4");
-                        TryRemoveSnacks(pv, pv.GetVesselCrew().Count);
-                    }
+                        fastingKerbals += TryRemoveSnacks(pv, pv.GetVesselCrew().Count);
                     else
-                    {
-
-                        List<PartResource> resources = new List<PartResource>();
-                        pv.vesselRef.rootPart.GetConnectedResources(snacksResource.id, resources);
-
-                        double demand = 1 * pv.vesselRef.GetCrewCount();
-                        double supplied = 0;
-                        foreach (PartResource res in resources)
-                        {
-                            Debug.Log("eating snacks for v:" + pv.vesselName);
-                            supplied = res.amount >= demand ? demand : res.amount;
-                            res.amount -= supplied;
-                            demand = demand - supplied;
-                            if (supplied >= demand)
-                                break;//we supplied enough snacks
-                        }
-                    }
+                        fastingKerbals += TryRemoveSnacks(pv.vesselRef, pv.vesselRef.GetCrewCount());
                 }
 
+            }
+            if (fastingKerbals > 0)
+            {
+                Debug.Log("fasting kerbals:" + fastingKerbals);
+                Reputation.Instance.AddReputation(-1f * fastingKerbals, fastingKerbals + " Kerbals out of snacks!");
+                ScreenMessages.PostScreenMessage(fastingKerbals + " Kerbals out of snacks(reputation decreased by " + fastingKerbals + ")");
             }
         }
 
