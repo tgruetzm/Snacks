@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEngine;
-/**
- * 
- * 
+﻿/**
 The MIT License (MIT)
 Copyright (c) 2014 Troy Gruetzmacher
 
@@ -29,6 +22,12 @@ SOFTWARE.
  * 
  * 
  * */
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using UnityEngine;
+
 namespace Snacks
 {
 
