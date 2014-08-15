@@ -24,6 +24,7 @@ namespace Snacks
             dayStartTime = Planetarium.GetUniversalTime();
             System.Random r = new System.Random();
             snackTime = r.NextDouble() * secondsInDay + dayStartTime;
+
             Debug.Log("Snacks Awake:" + dayStartTime);
         }
 
@@ -43,7 +44,7 @@ namespace Snacks
             double got = GetSnackResource(data.from, 1.0);
             Debug.Log("EVA Got:" + got);
             List<PartResource> resources = new List<PartResource>();
-            data.to.GetConnectedResources(snacksResource.id, resources);
+            data.to.GetConnectedResources(snacksResource.id,ResourceFlowMode.ALL_VESSEL, resources);
             resources.First().amount += got;
         }
 
@@ -59,7 +60,7 @@ namespace Snacks
                 data.to.Resources.Add(node);
             }
             List<PartResource> resources = new List<PartResource>();
-            data.to.GetConnectedResources(snacksResource.id, resources);
+            data.to.GetConnectedResources(snacksResource.id,ResourceFlowMode.ALL_VESSEL, resources);
             resources.First().amount = got;
             resources.First().maxAmount = 1;
 
@@ -112,8 +113,8 @@ namespace Snacks
         private double GetSnackResource(Part p, double demand)
         {
             List<PartResource> resources = new List<PartResource>();
-            p.GetConnectedResources(snacksResource.id, resources);
-     
+            p.GetConnectedResources(snacksResource.id, ResourceFlowMode.ALL_VESSEL, resources);
+      
             double supplied = 0;
             foreach (PartResource res in resources)
             {
@@ -209,8 +210,10 @@ namespace Snacks
                 {
                     if (!pv.vesselRef.loaded)
                     {
-                        snacksMissed += RemoveSnacks(pv);
-                       // Debug.Log("Ate snacks for: " + pv.vesselName);
+                        double snacks = RemoveSnacks(pv);
+                        snacksMissed += snacks;
+                        if (snacks > 0)
+                            Debug.Log("No snacks for: " + pv.vesselName);
                     }
                 }
             }
@@ -218,8 +221,10 @@ namespace Snacks
             {
                 if(v.GetCrewCount()> 0)
                 {
-                    snacksMissed += RemoveSnacks(v);
-                     //Debug.Log("Ate snacks for: " + v.vesselName);
+                    double snacks = RemoveSnacks(v);
+                    snacksMissed += snacks;
+                    if(snacks > 0)
+                        Debug.Log("No snacks for: " + v.vesselName);
                 }
             
             }
