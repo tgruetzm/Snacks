@@ -4,7 +4,7 @@ Snacks is a Kerbal Space Program mod that adds a simple life support system base
 
 Requirements:
 --------------
-Snacks requires the use of module manager.  The latest version is provided in the release package.
+Snacks requires the use of module manager v2.2.1.  The latest version is provided in the release package.
 
 v0.1 Alpha Features:
 --------------
