@@ -49,10 +49,12 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SnackController.cs" />
+    <Compile Include="SnackInitializer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Config\patch.cfg" />
-    <None Include="Config\resources.cfg" />
+    <None Include="Config\PluginData\Snacks\patch.cfg" />
+    <None Include="Config\PluginData\Snacks\resources.cfg" />
+    <None Include="Config\PluginData\Snacks\snacks.cfg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
