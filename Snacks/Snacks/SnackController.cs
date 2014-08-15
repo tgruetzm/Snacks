@@ -70,7 +70,7 @@ namespace Snacks
          */
         void Update()
         {
-            //Debug.Log("Snacks update:" + Time.time);
+          
         }
 
         /*
@@ -78,7 +78,7 @@ namespace Snacks
          */
         void FixedUpdate()
         {
-            if (Time.timeSinceLevelLoad < 1.0f || !FlightGlobals.ready || loadingNewScene)
+            if (Time.timeSinceLevelLoad < 1.0f)
             {
                 return;
             }
@@ -95,9 +95,6 @@ namespace Snacks
 
 
             }
-
-
-
         }
 
         /**Get a random chance of probability
