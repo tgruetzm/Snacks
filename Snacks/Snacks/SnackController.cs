@@ -7,18 +7,19 @@ using UnityEngine;
 namespace Snacks
 {
 
-    [KSPAddon(KSPAddon.Startup.Flight, false)]
+    [KSPAddon(KSPAddon.Startup.EveryScene, false)]
     public class SnackController : MonoBehaviour
     {
 
         private PartResourceDefinition snacksResource;
         private double dayStartTime, snackTime;
-        private int secondsInDay = 6 * 60 * 60;
+        private const int secondsInDay = 6 * 60 * 60;
+        private const double snacksPer = .25;
         private bool loadingNewScene = false;
 
         void Awake()
         {
-            GameEvents.onGameSceneLoadRequested.Add(OnGameSceneLoadRequested);
+            //GameEvents.onGameSceneLoadRequested.Add(OnGameSceneLoadRequested);
             snacksResource = PartResourceLibrary.Instance.GetDefinition("Snacks");
             dayStartTime = Planetarium.GetUniversalTime();
             System.Random r = new System.Random();
@@ -38,23 +39,30 @@ namespace Snacks
 
         private void OnCrewBoardVessel(GameEvents.FromToAction<Part, Part> data)
         {
-            throw new NotImplementedException();
+            Debug.Log("EVA End");
+            double got = GetSnackResource(data.from, 1.0);
+            Debug.Log("EVA Got:" + got);
+            List<PartResource> resources = new List<PartResource>();
+            data.to.GetConnectedResources(snacksResource.id, resources);
+            resources.First().amount += got;
         }
 
         private void OnCrewOnEva(GameEvents.FromToAction<Part, Part> data)
         {
             Debug.Log("EVA start");
-            double got = data.from.RequestResource(snacksResource.id, 1f);
+            double got = GetSnackResource(data.from,1.0);
             Debug.Log("EVA Got:" + got);
-            //ConfigNode node = new ConfigNode("RESOURCE");
-            //node.AddValue("name", "Snacks");
-            //node.AddValue("amount ", got);
-            //node.AddValue("maxAmount ", "1");
-            //node.AddValue("flowState ", "True");
-            //node.AddValue("isTweakable ", "False");
-            //node.AddValue("hideFlow ", "False");
-           // node.AddValue("flowMode  ", "both");
-            data.to.RequestResource(snacksResource.id, -1 * got);
+            if (!data.to.Resources.Contains(snacksResource.id))
+            {
+                ConfigNode node = new ConfigNode("RESOURCE");
+                node.AddValue("name", "Snacks");
+                data.to.Resources.Add(node);
+            }
+            List<PartResource> resources = new List<PartResource>();
+            data.to.GetConnectedResources(snacksResource.id, resources);
+            resources.First().amount = got;
+            resources.First().maxAmount = 1;
+
         }
 
         /*
@@ -92,79 +100,138 @@ namespace Snacks
 
         }
 
-        int TryRemoveSnacks(ProtoVessel pv, double request)
+        /**Get a random chance of probability
+         * 
+         **/
+        private bool GetRandomChance(int prob)
+        {
+            System.Random r = new System.Random();
+            int i = r.Next() % 100;
+            if (i < prob)
+                return true;
+            return false;
+        }
+
+        private double GetSnackResource(Part p, double demand)
+        {
+            List<PartResource> resources = new List<PartResource>();
+            p.GetConnectedResources(snacksResource.id, resources);
+     
+            double supplied = 0;
+            foreach (PartResource res in resources)
+            {
+                if (res.amount >= demand)
+                {
+                    res.amount -= demand;
+                    supplied += demand;
+                    return supplied;
+                }
+                else
+                {
+                    
+                    supplied += res.amount;
+                    demand -= res.amount;
+                    res.amount = 0;
+                }
+
+            }
+            return supplied;
+
+        }
+
+        private double GetSnackResource(List<ProtoPartSnapshot> protoPartSnapshots, double demand)
         {
             double supplied = 0;
-            foreach (ProtoPartSnapshot pps in pv.protoPartSnapshots)
+            foreach (ProtoPartSnapshot pps in protoPartSnapshots)
             {
                 var res = from r in pps.resources
                           where r.resourceName == "Snacks"
                           select r;
                 if (res.Count() > 0)
                 {
-                    //Debug.Log(res.First().resourceValues);
                     ConfigNode node = res.First().resourceValues;
                     double amount = Double.Parse(node.GetValue("amount"));
-                    if (amount >= request)
+                    if (amount >= demand)
                     {
-                        node.SetValue("amount", (amount -= request).ToString());
-                        Debug.Log("removed snacks from: " + pv.vesselName);
-                        return 0;//met request
+                        node.SetValue("amount", (amount -= demand).ToString());
+                        supplied += demand;
+                        return supplied;
                     }
                     else
                     {
                         node.SetValue("amount", "0");
                         supplied += amount;
-                        request -= amount;
+                        demand -= amount;
                     }
                 }
-
             }
+            return supplied;
+        }
 
-            return pv.GetVesselCrew().Count;
+        double CalculateSnacksRequired(List<ProtoCrewMember> crew)
+        {
+
+            double extra = 0;
+            foreach (ProtoCrewMember pc in crew)
+            {
+                if (pc.isBadass && GetRandomChance(10))
+                    extra += snacksPer;
+                if (pc.stupidity > .6 && GetRandomChance(25))
+                    extra -= snacksPer;
+            }
+            //Debug.Log("Extra:" + extra + " total:" + crew.Count * snacksPer);
+            return extra + crew.Count * snacksPer;
+        }
+
+        double RemoveSnacks(ProtoVessel pv)
+        {
+            double demand = CalculateSnacksRequired(pv.GetVesselCrew());
+            double fed = GetSnackResource(pv.protoPartSnapshots, demand);
+            if (fed == 0)//unable to feed, no skipping or extra counted
+                return pv.GetVesselCrew().Count * snacksPer;
+            return demand - fed;
         }
 
 
-        int TryRemoveSnacks(Vessel v, double request)
+        double RemoveSnacks(Vessel v)
         {
-            List<PartResource> resources = new List<PartResource>();
-            v.rootPart.GetConnectedResources(snacksResource.id, resources);
 
-            double demand = 1 * v.GetCrewCount();
-            double supplied = 0;
-            foreach (PartResource res in resources)
-            {
-                Debug.Log("eating snacks for v:" + v.vesselName);
-                supplied = res.amount >= demand ? demand : res.amount;
-                res.amount -= supplied;
-                demand = demand - supplied;
-                if (supplied >= demand)
-                    return 0;//we supplied enough snacks
-            }
-
-            return v.GetCrewCount();
+            double demand = CalculateSnacksRequired(v.GetVesselCrew());
+            double fed = GetSnackResource(v.rootPart, demand);
+            if (fed == 0)//unable to feed, no skipping or extra counted
+                return v.GetCrewCount() * snacksPer;
+            return demand - fed;
         }
 
         void EatSnacks()
         {
-            int fastingKerbals = 0;
+            double snacksMissed = 0;
             foreach (ProtoVessel pv in HighLogic.CurrentGame.flightState.protoVessels)
             {
                 if (pv.GetVesselCrew().Count > 0)
                 {
-                    Debug.Log(pv.vesselRef);
                     if (!pv.vesselRef.loaded)
-                        fastingKerbals += TryRemoveSnacks(pv, pv.GetVesselCrew().Count);
-                    else
-                        fastingKerbals += TryRemoveSnacks(pv.vesselRef, pv.vesselRef.GetCrewCount());
+                    {
+                        snacksMissed += RemoveSnacks(pv);
+                       // Debug.Log("Ate snacks for: " + pv.vesselName);
+                    }
                 }
-
             }
-            if (fastingKerbals > 0)
+            foreach (Vessel v in FlightGlobals.Vessels)
             {
-                Debug.Log("fasting kerbals:" + fastingKerbals);
+                if(v.GetCrewCount()> 0)
+                {
+                    snacksMissed += RemoveSnacks(v);
+                     //Debug.Log("Ate snacks for: " + v.vesselName);
+                }
+            
+            }
+
+            if (snacksMissed > 0)
+            {
+                int fastingKerbals = Convert.ToInt32(snacksMissed/snacksPer);
                 Reputation.Instance.AddReputation(-1f * fastingKerbals, fastingKerbals + " Kerbals out of snacks!");
-                ScreenMessages.PostScreenMessage(fastingKerbals + " Kerbals out of snacks(reputation decreased by " + fastingKerbals + ")");
+                ScreenMessages.PostScreenMessage(fastingKerbals + " Kerbals didn't have any snacks(reputation decreased by " + fastingKerbals + ")",5,ScreenMessageStyle.UPPER_LEFT);
             }
         }
 
@@ -181,7 +248,9 @@ namespace Snacks
          */
         void OnDestroy()
         {
-            Debug.Log("Snacks destroy:" + Time.time);
+            //Debug.Log("Snacks destroy:" + Time.time);
+            GameEvents.onCrewOnEva.Remove(OnCrewOnEva);
+            GameEvents.onCrewBoardVessel.Remove(OnCrewBoardVessel);
         }
     }
 }

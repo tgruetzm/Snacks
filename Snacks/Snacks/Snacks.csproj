@@ -56,6 +56,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>xcopy /y "$(TargetDir)$(ProjectName).dll" E:\KSP\KSP_dev\KSP_win\GameData\Snacks
+xcopy /y "$(ProjectDir)\Config\*" E:\KSP\KSP_dev\KSP_win\GameData\Snacks
 
 start E:\KSP\KSP_dev\KSP_win\KSP.exe</PostBuildEvent>
   </PropertyGroup>
