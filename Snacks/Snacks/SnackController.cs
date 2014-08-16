@@ -36,30 +36,38 @@ namespace Snacks
     {
 
         private PartResourceDefinition snacksResource;
-        private double dayStartTime, snackTime;
+        private double snackTime = -1;
         private const int secondsInDay = 6 * 60 * 60;
         private const double snacksPer = .25;
+        private const float lossPerDayPerKerbal = 0.0025f;
         private bool loadingNewScene = false;
+        private System.Random random = new System.Random();
 
         void Awake()
         {
-            //GameEvents.onGameSceneLoadRequested.Add(OnGameSceneLoadRequested);
-            snacksResource = PartResourceLibrary.Instance.GetDefinition("Snacks");
-            dayStartTime = Planetarium.GetUniversalTime();
-            System.Random r = new System.Random();
-            snackTime = r.NextDouble() * secondsInDay + dayStartTime;
-
-            Debug.Log("Snacks Awake:" + dayStartTime);
+            try
+            {
+                snacksResource = PartResourceLibrary.Instance.GetDefinition("Snacks");
+                GameEvents.onCrewOnEva.Add(OnCrewOnEva);
+                GameEvents.onCrewBoardVessel.Add(OnCrewBoardVessel);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Snacks - Awake error: " + ex.Message);
+            }
+            
         }
 
-        /*
-         * Called next.
-         */
         void Start()
         {
-            Debug.Log("Snacks start:" + Time.time);
-            GameEvents.onCrewOnEva.Add(OnCrewOnEva);
-            GameEvents.onCrewBoardVessel.Add(OnCrewBoardVessel);
+            try
+            {
+                snackTime = random.NextDouble() * secondsInDay + Planetarium.GetUniversalTime();
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Snacks - Start error: " + ex.Message);
+            }
         }
 
         private void OnCrewBoardVessel(GameEvents.FromToAction<Part, Part> data)
@@ -90,46 +98,50 @@ namespace Snacks
 
         }
 
-        /*
-         * Called every frame
-         */
-        void Update()
-        {
-          
-        }
-
-        /*
-         * Called at a fixed time interval determined by the physics time step.
-         */
         void FixedUpdate()
         {
-            if (Time.timeSinceLevelLoad < 1.0f)
+            try
             {
-                return;
+
+                if (Time.timeSinceLevelLoad < 1.0f)
+                {
+                    return;
+                }
+
+                double currentTime = Planetarium.GetUniversalTime();
+
+                if (currentTime > snackTime)
+                {
+                    System.Random rand = new System.Random();
+                    snackTime = rand.NextDouble() * secondsInDay + currentTime;
+                    Debug.Log("Next Snack Time!:" + currentTime);
+                    EatSnacks();
+
+
+                }
             }
-
-            double currentTime = Planetarium.GetUniversalTime();
-
-
-            if (currentTime > snackTime)
+            catch (Exception ex)
             {
-                System.Random rand = new System.Random();
-                snackTime = rand.NextDouble() * secondsInDay + Planetarium.GetUniversalTime();
-                Debug.Log("Next Snack Time!:" + snackTime);
-                EatSnacks();
-
-
+                Debug.Log("Snacks - FixedUpdate: " + ex.Message);
             }
         }
 
-        /**Get a random chance of probability
-         * 
-         **/
-        private bool GetRandomChance(int prob)
+        void OnDestroy()
         {
-            System.Random r = new System.Random();
-            int i = r.Next() % 100;
-            if (i < prob)
+            try
+            {
+                GameEvents.onCrewOnEva.Remove(OnCrewOnEva);
+                GameEvents.onCrewBoardVessel.Remove(OnCrewBoardVessel);
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Snacks - OnDestroy: " + ex.Message);
+            }
+        }
+
+        private bool GetRandomChance(double prob)
+        {
+            if (random.NextDouble() < prob)
                 return true;
             return false;
         }
@@ -190,22 +202,24 @@ namespace Snacks
             return supplied;
         }
 
-        double CalculateSnacksRequired(List<ProtoCrewMember> crew)
+        private double CalculateSnacksRequired(List<ProtoCrewMember> crew)
         {
 
             double extra = 0;
             foreach (ProtoCrewMember pc in crew)
             {
-                if (pc.isBadass && GetRandomChance(10))
+                if (GetRandomChance(pc.courage/2.0))
                     extra += snacksPer;
-                if (pc.stupidity > .6 && GetRandomChance(25))
+                if (GetRandomChance(pc.stupidity/2.0))
+                    extra -= snacksPer;
+                if (pc.isBadass && GetRandomChance(.2))
                     extra -= snacksPer;
             }
             //Debug.Log("Extra:" + extra + " total:" + crew.Count * snacksPer);
             return extra + crew.Count * snacksPer;
         }
 
-        double RemoveSnacks(ProtoVessel pv)
+        private double RemoveSnacks(ProtoVessel pv)
         {
             double demand = CalculateSnacksRequired(pv.GetVesselCrew());
             double fed = GetSnackResource(pv.protoPartSnapshots, demand);
@@ -214,8 +228,7 @@ namespace Snacks
             return demand - fed;
         }
 
-
-        double RemoveSnacks(Vessel v)
+        private double RemoveSnacks(Vessel v)
         {
 
             double demand = CalculateSnacksRequired(v.GetVesselCrew());
@@ -225,11 +238,12 @@ namespace Snacks
             return demand - fed;
         }
 
-        void EatSnacks()
+        private void EatSnacks()
         {
             double snacksMissed = 0;
             foreach (ProtoVessel pv in HighLogic.CurrentGame.flightState.protoVessels)
             {
+                SetVesselOutOfSnacks(pv);
                 if (pv.GetVesselCrew().Count > 0)
                 {
                     if (!pv.vesselRef.loaded)
@@ -256,27 +270,19 @@ namespace Snacks
             if (snacksMissed > 0)
             {
                 int fastingKerbals = Convert.ToInt32(snacksMissed/snacksPer);
-                Reputation.Instance.AddReputation(-1f * fastingKerbals, fastingKerbals + " Kerbals out of snacks!");
-                ScreenMessages.PostScreenMessage(fastingKerbals + " Kerbals didn't have any snacks(reputation decreased by " + fastingKerbals + ")",5,ScreenMessageStyle.UPPER_LEFT);
+                float repLoss;
+                if (Reputation.CurrentRep > 0)
+                    repLoss = fastingKerbals * lossPerDayPerKerbal * Reputation.Instance.reputation;
+                else
+                    repLoss = fastingKerbals;
+                Reputation.Instance.AddReputation(-1f * repLoss, fastingKerbals + " Kerbals out of snacks!");
+                ScreenMessages.PostScreenMessage(fastingKerbals + " Kerbals didn't have any snacks(reputation decreased by " + repLoss + ")",5, ScreenMessageStyle.UPPER_LEFT);
             }
         }
 
-        private void OnGameSceneLoadRequested(GameScenes gameScene)
+        private void SetVesselOutOfSnacks(ProtoVessel pv)
         {
-            Debug.Log("Game scene load requested: " + gameScene);
-
-            // Disable this instance becuase a new instance will be created after the new scene is loaded
-            loadingNewScene = true;
-        }
-
-        /*
-         * Called when the game is leaving the scene (or exiting). Perform any clean up work here.
-         */
-        void OnDestroy()
-        {
-            //Debug.Log("Snacks destroy:" + Time.time);
-            GameEvents.onCrewOnEva.Remove(OnCrewOnEva);
-            GameEvents.onCrewBoardVessel.Remove(OnCrewBoardVessel);
+            Debug.Log(pv.ctrlState);
         }
     }
 }

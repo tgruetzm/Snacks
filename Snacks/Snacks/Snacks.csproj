@@ -52,14 +52,14 @@
     <Compile Include="SnackInitializer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Config\PluginData\Snacks\patch.cfg" />
-    <None Include="Config\PluginData\Snacks\resources.cfg" />
+    <None Include="Config\patch.cfg" />
+    <None Include="Config\resources.cfg" />
     <None Include="Config\PluginData\Snacks\snacks.cfg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>xcopy /y "$(TargetDir)$(ProjectName).dll" E:\KSP\KSP_dev\KSP_win\GameData\Snacks
-xcopy /y "$(ProjectDir)\Config\*" E:\KSP\KSP_dev\KSP_win\GameData\Snacks
+xcopy /s /y "$(ProjectDir)\Config\*" E:\KSP\KSP_dev\KSP_win\GameData\Snacks
 
 start E:\KSP\KSP_dev\KSP_win\KSP.exe</PostBuildEvent>
   </PropertyGroup>
