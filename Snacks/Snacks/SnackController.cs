@@ -182,7 +182,7 @@ namespace Snacks
                 else
                     repLoss = fastingKerbals;
                 Reputation.Instance.AddReputation(Convert.ToSingle(-1 * repLoss), fastingKerbals + " Kerbals out of snacks!");
-                ScreenMessages.PostScreenMessage(fastingKerbals + " Kerbals didn't have any snacks(reputation decreased by " + repLoss + ")",5, ScreenMessageStyle.UPPER_LEFT);
+                ScreenMessages.PostScreenMessage(fastingKerbals + " Kerbals didn't have any snacks(reputation decreased by " + Convert.ToInt32(repLoss) + ")",5, ScreenMessageStyle.UPPER_LEFT);
             }
         }
 
