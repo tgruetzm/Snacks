@@ -32,6 +32,7 @@ using KSP.IO;
 namespace Snacks
 {
 //[KSPAddon(KSPAddon.Startup.SpaceCentre, false)]
+    //not used currently
     class SnackInitializer : MonoBehaviour
     {
 

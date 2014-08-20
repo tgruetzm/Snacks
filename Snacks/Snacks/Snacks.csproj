@@ -35,6 +35,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>E:\KSP\KSP_dev\KSP_win\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
+    <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>E:\KSP\KSP_dev\KSP_win\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -47,22 +51,34 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EVANutritiveAnalyzer.cs" />
     <Compile Include="FlightController.cs" />
+    <Compile Include="KSPPluginFramework\ConfigNodeStorage.cs" />
+    <Compile Include="KSPPluginFramework\ExtensionsUnity.cs" />
+    <Compile Include="KSPPluginFramework\MonoBehaviourExtended.cs" />
+    <Compile Include="KSPPluginFramework\MonoBehaviourWindow.cs" />
+    <Compile Include="KSPPluginFramework\SkinsLibrary.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SnackConsumer.cs" />
     <Compile Include="SnackController.cs" />
     <Compile Include="SnackInitializer.cs" />
-    <Compile Include="SnackModule.cs" />
+    <Compile Include="SnackFactory.cs" />
+    <Compile Include="SupplyWindow.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Config\patch.cfg" />
     <None Include="Config\resources.cfg" />
     <None Include="Config\PluginData\Snacks\snacks.cfg" />
   </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Textures\snacks.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>xcopy /y "$(TargetDir)$(ProjectName).dll" E:\KSP\KSP_dev\KSP_win\GameData\Snacks
 xcopy /s /y "$(ProjectDir)\Config\*" E:\KSP\KSP_dev\KSP_win\GameData\Snacks
+xcopy /s /y "$(ProjectDir)\Textures\*" E:\KSP\KSP_dev\KSP_win\GameData\Snacks\Textures
 
 start E:\KSP\KSP_dev\KSP_win\KSP.exe</PostBuildEvent>
   </PropertyGroup>

@@ -80,29 +80,44 @@ namespace Snacks
 
         private void OnCrewBoardVessel(GameEvents.FromToAction<Part, Part> data)
         {
-            Debug.Log("EVA End");
-            double got = consumer.GetSnackResource(data.from, 1.0);
-            Debug.Log("EVA Got:" + got);
-            List<PartResource> resources = new List<PartResource>();
-            data.to.GetConnectedResources(snacksResource.id,ResourceFlowMode.ALL_VESSEL, resources);
-            resources.First().amount += got;
+            try
+            {
+                Debug.Log("EVA End");
+                double got = consumer.GetSnackResource(data.from, 1.0);
+                Debug.Log("EVA Got:" + got);
+                List<PartResource> resources = new List<PartResource>();
+                data.to.GetConnectedResources(snacksResource.id, ResourceFlowMode.ALL_VESSEL, resources);
+                resources.First().amount += got;
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Snacks - OnCrewBoardVessel: " + ex.Message);
+            }
         }
 
         private void OnCrewOnEva(GameEvents.FromToAction<Part, Part> data)
         {
-            Debug.Log("EVA start");
-            double got = consumer.GetSnackResource(data.from, 1.0);
-            Debug.Log("EVA Got:" + got);
-            if (!data.to.Resources.Contains(snacksResource.id))
+            try
             {
-                ConfigNode node = new ConfigNode("RESOURCE");
-                node.AddValue("name", "Snacks");
-                data.to.Resources.Add(node);
+                Debug.Log("EVA start");
+                double got = consumer.GetSnackResource(data.from, 1.0);
+                Debug.Log("EVA Got:" + got);
+                if (!data.to.Resources.Contains(snacksResource.id))
+                {
+                    ConfigNode node = new ConfigNode("RESOURCE");
+                    node.AddValue("name", "Snacks");
+                    data.to.Resources.Add(node);
+                }
+                List<PartResource> resources = new List<PartResource>();
+                data.to.GetConnectedResources(snacksResource.id, ResourceFlowMode.ALL_VESSEL, resources);
+                resources.First().amount = got;
+                resources.First().maxAmount = 1;
+                data.to.AddModule("EVANutritiveAnalyzer");
             }
-            List<PartResource> resources = new List<PartResource>();
-            data.to.GetConnectedResources(snacksResource.id,ResourceFlowMode.ALL_VESSEL, resources);
-            resources.First().amount = got;
-            resources.First().maxAmount = 1;
+            catch (Exception ex)
+            {
+                Debug.Log("Snacks - OnCrewOnEva " + ex.Message);
+            }
 
         }
 

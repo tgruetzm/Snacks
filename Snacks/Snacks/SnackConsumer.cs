@@ -80,6 +80,7 @@ namespace Snacks
         public double GetSnackResource(List<ProtoPartSnapshot> protoPartSnapshots, double demand)
         {
             double supplied = 0;
+            bool resFound = false;
             foreach (ProtoPartSnapshot pps in protoPartSnapshots)
             {
                 var res = from r in pps.resources
@@ -87,6 +88,7 @@ namespace Snacks
                           select r;
                 if (res.Count() > 0)
                 {
+                    resFound = true;
                     ConfigNode node = res.First().resourceValues;
                     double amount = Double.Parse(node.GetValue("amount"));
                     if (amount >= demand)
@@ -103,10 +105,12 @@ namespace Snacks
                     }
                 }
             }
+            if (!resFound)
+                return demand;//if no snack resources were found, this vessel has not been loaded.  Feed them from the magic bucket.
             return supplied;
         }
 
-        private double CalculateSnacksRequired(List<ProtoCrewMember> crew)
+        private double CalculateExtraSnacksRequired(List<ProtoCrewMember> crew)
         {
 
             double extra = 0;
@@ -119,9 +123,7 @@ namespace Snacks
                 if (pc.isBadass && GetRandomChance(.2))
                     extra -= snacksPer;
             }
-            double demand = extra + crew.Count * snacksPer;
-            Debug.Log("Snack Demand: " + demand);
-            return demand;
+            return extra;
         }
 
         /**
@@ -130,13 +132,15 @@ namespace Snacks
          * */
         public double RemoveSnacks(ProtoVessel pv)
         {
-            double demand = CalculateSnacksRequired(pv.GetVesselCrew());
-            if (demand <= 0.0)
+            double demand = pv.GetVesselCrew().Count * snacksPer;
+            double extra = CalculateExtraSnacksRequired(pv.GetVesselCrew());
+            Debug.Log("SnackDemand(" + pv.vesselName +"): e: " + extra + " r:" + demand);
+            if ((demand + extra) <= 0)
                 return 0;
-            double fed = GetSnackResource(pv.protoPartSnapshots, demand);
+            double fed = GetSnackResource(pv.protoPartSnapshots, demand + extra);
             if (fed == 0)//unable to feed, no skipping or extra counted
                 return pv.GetVesselCrew().Count * snacksPer;
-            return demand - fed;
+            return demand + extra - fed;
         }
 
         /**
@@ -146,13 +150,15 @@ namespace Snacks
         public double RemoveSnacks(Vessel v)
         {
 
-            double demand = CalculateSnacksRequired(v.GetVesselCrew());
-            if (demand <= 0.0)
+            double demand = v.GetVesselCrew().Count * snacksPer;
+            double extra = CalculateExtraSnacksRequired(v.GetVesselCrew());
+            Debug.Log("SnackDemand(" + v.vesselName + "): e: " + extra + " r:" + demand);
+            if ((demand + extra) <= 0)
                 return 0;
-            double fed = GetSnackResource(v.rootPart, demand);
+            double fed = GetSnackResource(v.rootPart, demand + extra);
             if (fed == 0)//unable to feed, no skipping or extra counted
                 return v.GetCrewCount() * snacksPer;
-            return demand - fed;
+            return demand + extra - fed;
         }
     }
 }
