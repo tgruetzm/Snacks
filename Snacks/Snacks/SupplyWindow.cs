@@ -32,7 +32,7 @@ using UnityEngine;
 
 namespace Snacks
 {
-    [KSPAddon(KSPAddon.Startup.EveryScene, false)]
+    [KSPAddon(KSPAddon.Startup.Flight | KSPAddon.Startup.EveryScene, false)]
     class SupplyWindow : KSPPluginFramework.MonoBehaviourWindow
     {
 
@@ -47,7 +47,7 @@ namespace Snacks
         internal override void Awake()
         {
             WindowCaption = "Snack Supply";
-            WindowRect = new Rect(0, 0, 250, 300);
+            WindowRect = new Rect(0, 0, 300, 300);
             Visible = false;
             string textureName = "Snacks/Textures/snacks";
             texture = GameDatabase.Instance.GetTexture(textureName,false);
@@ -56,8 +56,13 @@ namespace Snacks
 
         private void SetupGUI()
         {
-            if(button == null)
-                button = ApplicationLauncher.Instance.AddModApplication(ShowGUI, HideGUI, null, null, null, null, ApplicationLauncher.AppScenes.ALWAYS,texture);
+            if (HighLogic.LoadedScene == GameScenes.FLIGHT || HighLogic.LoadedScene == GameScenes.SPACECENTER)
+            {
+                if (button == null)
+                    button = ApplicationLauncher.Instance.AddModApplication(ShowGUI, HideGUI, null, null, null, null, ApplicationLauncher.AppScenes.ALWAYS, texture);
+            }
+            else if (button != null)
+                ApplicationLauncher.Instance.RemoveModApplication(button);
         }
 
 
@@ -73,8 +78,8 @@ namespace Snacks
 
         private void SetupStyles()
         {
+           
             hedStyle = new GUIStyle(GUI.skin.label);
-            hedStyle.fontStyle = FontStyle.Bold;
             regStyle = new GUIStyle(GUI.skin.label);
             regStyle.margin = new RectOffset(25, 0, 0, 0);
             redStyle = new GUIStyle(regStyle);
@@ -89,7 +94,7 @@ namespace Snacks
                 SetupStyles();
             DragEnabled = true;
             TooltipsEnabled = true;
-            scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(300), GUILayout.Width(250));
+            scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(300), GUILayout.Width(300));
 
             var ships = from ProtoVessel v in HighLogic.CurrentGame.flightState.protoVessels
                         where v.GetVesselCrew().Count() > 0
@@ -98,7 +103,7 @@ namespace Snacks
 
             foreach (var s in ships)
             {
-                GUILayout.Label(s.Vessels.First().vesselRef.mainBody.name,hedStyle);
+                GUILayout.Label(s.Vessels.First().vesselRef.mainBody.name + ":");
                 foreach (var v in s.Vessels)
                 {
                     double snackAmount = 0;
@@ -130,12 +135,12 @@ namespace Snacks
             GUILayout.EndScrollView();
 
         }
-        /*private void onDestroy()
+        private void onDestroy()
         {
             Debug.Log("SupplyWindow destroyed");
             if (button != null)
                 ApplicationLauncher.Instance.RemoveModApplication(button);
-        }*/
+        }
     }
 
 
