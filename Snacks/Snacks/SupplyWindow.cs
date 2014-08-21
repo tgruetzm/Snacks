@@ -1,4 +1,29 @@
-﻿using KSP.IO;
+﻿/**
+The MIT License (MIT)
+Copyright (c) 2014 Troy Gruetzmacher
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ * 
+ * 
+ * */
+
+using KSP.IO;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,18 +32,22 @@ using UnityEngine;
 
 namespace Snacks
 {
-    [KSPAddon(KSPAddon.Startup.SpaceCentre, false)]
+    [KSPAddon(KSPAddon.Startup.EveryScene, false)]
     class SupplyWindow : KSPPluginFramework.MonoBehaviourWindow
     {
 
         private Texture2D texture;
         private static ApplicationLauncherButton button;
         private Vector2 scrollPos = new Vector2();
+        private GUIStyle redStyle;
+        private GUIStyle regStyle;
+        private GUIStyle yelStyle;
+        private GUIStyle hedStyle;
  
         internal override void Awake()
         {
             WindowCaption = "Snack Supply";
-            WindowRect = new Rect(0, 0, 250, 250);
+            WindowRect = new Rect(0, 0, 250, 300);
             Visible = false;
             string textureName = "Snacks/Textures/snacks";
             texture = GameDatabase.Instance.GetTexture(textureName,false);
@@ -28,7 +57,7 @@ namespace Snacks
         private void SetupGUI()
         {
             if(button == null)
-                button = ApplicationLauncher.Instance.AddModApplication(ShowGUI, HideGUI, null, null, null, null, ApplicationLauncher.AppScenes.SPACECENTER,texture);
+                button = ApplicationLauncher.Instance.AddModApplication(ShowGUI, HideGUI, null, null, null, null, ApplicationLauncher.AppScenes.ALWAYS,texture);
         }
 
 
@@ -42,26 +71,34 @@ namespace Snacks
             Visible = false;
         }
 
+        private void SetupStyles()
+        {
+            hedStyle = new GUIStyle(GUI.skin.label);
+            hedStyle.fontStyle = FontStyle.Bold;
+            regStyle = new GUIStyle(GUI.skin.label);
+            regStyle.margin = new RectOffset(25, 0, 0, 0);
+            redStyle = new GUIStyle(regStyle);
+            redStyle.normal.textColor = Color.red;
+            yelStyle = new GUIStyle(regStyle);
+            yelStyle.normal.textColor = Color.yellow;
+        }
+
         internal override void DrawWindow(int id)
         {
+            if (hedStyle == null)
+                SetupStyles();
             DragEnabled = true;
-            Vector2 pos = new Vector2();
-            scrollPos = GUILayout.BeginScrollView(scrollPos, false, true, GUILayout.Height(250), GUILayout.Width(250));
-            //GUILayout.BeginVertical();
-            //GUILayout.BeginArea(new Rect(10,10,200,200));
-            //GUILayout.ExpandHeight(true);
+            TooltipsEnabled = true;
+            scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(300), GUILayout.Width(250));
 
             var ships = from ProtoVessel v in HighLogic.CurrentGame.flightState.protoVessels
                         where v.GetVesselCrew().Count() > 0
                         group v by v.orbitSnapShot.ReferenceBodyIndex into g
                         select new { Body = g.Key ,Vessels = g };
-                   
+
             foreach (var s in ships)
             {
-                if (s.Body == 1)
-                    GUILayout.Label("Kerbin:");
-                else if (s.Body == 2)
-                    GUILayout.Label("Mun:");
+                GUILayout.Label(s.Vessels.First().vesselRef.mainBody.name,hedStyle);
                 foreach (var v in s.Vessels)
                 {
                     double snackAmount = 0;
@@ -79,33 +116,18 @@ namespace Snacks
 
                         }
                     }
-                    GUILayout.Label(v.vesselName + ": " + Convert.ToInt32(snackAmount) + "/" + Convert.ToInt32(snackMax));
+                   int crew = v.GetVesselCrew().Count();
+                   int days = Convert.ToInt32(snackAmount/crew/.5);
+                    if(snackAmount/snackMax > .5)   
+                        GUILayout.Label(new GUIContent(v.vesselName + ": " + Convert.ToInt32(snackAmount) + "/" + Convert.ToInt32(snackMax),"Crew: " + crew + " Duration Estimate: " + days + " days"),regStyle);
+                    else if(snackAmount/snackMax > .25)
+                        GUILayout.Label(new GUIContent(v.vesselName + ": " + Convert.ToInt32(snackAmount) + "/" + Convert.ToInt32(snackMax), "Crew: " + crew + " Duration Estimate: " + days + " days"), yelStyle);
+                    else
+                        GUILayout.Label(new GUIContent(v.vesselName + ": " + Convert.ToInt32(snackAmount) + "/" + Convert.ToInt32(snackMax), "Crew: " + crew + " Duration Estimate: " + days + " days"), redStyle);
+
                 }
             }
-
-            //GUILayout.EndArea();
             GUILayout.EndScrollView();
-
-  
-            /*GUILayout.Label(new GUIContent("Window Contents", "Here is a reallly long tooltip to demonstrate the war and peace model of writing too much text in a tooltip\r\n\r\nIt even includes a couple of carriage returns to make stuff fun"));
-            GUILayout.Label(String.Format("Drag Enabled:{0}", DragEnabled.ToString()));
-            GUILayout.Label(String.Format("ClampToScreen:{0}", ClampToScreen.ToString()));
-            GUILayout.Label(String.Format("Tooltips:{0}", TooltipsEnabled.ToString()));
-
-            if (GUILayout.Button("Toggle Drag"))
-                DragEnabled = !DragEnabled;
-            if (GUILayout.Button("Toggle Screen Clamping"))
-                ClampToScreen = !ClampToScreen;
-
-            if (GUILayout.Button(new GUIContent("Toggle Tooltips", "Can you see my Tooltip?")))
-                TooltipsEnabled = !TooltipsEnabled;
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Max Tooltip Width");
-            TooltipMaxWidth = Convert.ToInt32(GUILayout.TextField(TooltipMaxWidth.ToString()));
-            GUILayout.EndHorizontal();
-            GUILayout.Label("Width of 0 means no limit");
-
-            GUILayout.Label("Alt+F11 - shows/hides window");*/
 
         }
         /*private void onDestroy()
@@ -115,7 +137,6 @@ namespace Snacks
                 ApplicationLauncher.Instance.RemoveModApplication(button);
         }*/
     }
-
 
 
 }
