@@ -59,10 +59,12 @@
     <Compile Include="KSPPluginFramework\MonoBehaviourWindow.cs" />
     <Compile Include="KSPPluginFramework\SkinsLibrary.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ShipSupply.cs" />
     <Compile Include="SnackConsumer.cs" />
     <Compile Include="SnackController.cs" />
-    <Compile Include="SnackInitializer.cs" />
+    <Compile Include="SnackConfiguration.cs" />
     <Compile Include="SnackFactory.cs" />
+    <Compile Include="SnackSnapshot.cs" />
     <Compile Include="SupplyWindow.cs" />
   </ItemGroup>
   <ItemGroup>

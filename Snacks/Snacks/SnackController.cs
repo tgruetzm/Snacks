@@ -36,32 +36,29 @@ namespace Snacks
     public class SnackController : MonoBehaviour
     {
         private double snackTime = -1;
-        private const int secondsInDay = 6 * 60 * 60;
         private System.Random random = new System.Random();
-        private PartResourceDefinition snacksResource;
+
         private SnackConsumer consumer;
-        private double snacksPer;
+        private double snacksPerMeal;
         private double lossPerDayPerKerbal;
+        private int snackResourceId;
+        private int snackFrequency;
 
         void Awake()
         {
             try
             {
-                snacksResource = PartResourceLibrary.Instance.GetDefinition("Snacks");
-          
                 GameEvents.onCrewOnEva.Add(OnCrewOnEva);
                 GameEvents.onCrewBoardVessel.Add(OnCrewBoardVessel);
-                string file = IOUtils.GetFilePathFor(this.GetType(), "snacks.cfg");
-                Debug.Log("loading file:" + file);
-                ConfigNode node = ConfigNode.Load(file).GetNode("SNACKS");
-                snacksPer = double.Parse(node.GetValue("snacksPerMeal"));
-                lossPerDayPerKerbal = double.Parse(node.GetValue("repLossPercent"));
-                Debug.Log("snacksPer: " + snacksPer);
-                consumer = new SnackConsumer(snacksPer, lossPerDayPerKerbal);
+                SnackConfiguration snackConfig = SnackConfiguration.Instance();
+                snackResourceId = snackConfig.SnackResourceId;
+                snackFrequency = 6 * 60 * 60 * 2 / snackConfig.MealsPerDay;
+                snacksPerMeal = snackConfig.SnacksPerMeal;
+                consumer = new SnackConsumer(snackConfig.SnacksPerMeal, snackConfig.LossPerDay);
             }
             catch (Exception ex)
             {
-                Debug.Log("Snacks - Awake error: " + ex.Message);
+                Debug.Log("Snacks - Awake error: " + ex.Message + ex.StackTrace);
             }
             
         }
@@ -70,11 +67,11 @@ namespace Snacks
         {
             try
             {
-                snackTime = random.NextDouble() * secondsInDay + Planetarium.GetUniversalTime();
+                snackTime = random.NextDouble() * snackFrequency + Planetarium.GetUniversalTime();
             }
             catch (Exception ex)
             {
-                Debug.Log("Snacks - Start error: " + ex.Message);
+                Debug.Log("Snacks - Start error: " + ex.Message + ex.StackTrace);
             }
         }
 
@@ -86,12 +83,12 @@ namespace Snacks
                 double got = consumer.GetSnackResource(data.from, 1.0);
                 Debug.Log("EVA Got:" + got);
                 List<PartResource> resources = new List<PartResource>();
-                data.to.GetConnectedResources(snacksResource.id, ResourceFlowMode.ALL_VESSEL, resources);
+                data.to.GetConnectedResources(snackResourceId, ResourceFlowMode.ALL_VESSEL, resources);
                 resources.First().amount += got;
             }
             catch (Exception ex)
             {
-                Debug.Log("Snacks - OnCrewBoardVessel: " + ex.Message);
+                Debug.Log("Snacks - OnCrewBoardVessel: " + ex.Message + ex.StackTrace);
             }
         }
 
@@ -102,21 +99,21 @@ namespace Snacks
                 Debug.Log("EVA start");
                 double got = consumer.GetSnackResource(data.from, 1.0);
                 Debug.Log("EVA Got:" + got);
-                if (!data.to.Resources.Contains(snacksResource.id))
+                if (!data.to.Resources.Contains(snackResourceId))
                 {
                     ConfigNode node = new ConfigNode("RESOURCE");
                     node.AddValue("name", "Snacks");
                     data.to.Resources.Add(node);
                 }
                 List<PartResource> resources = new List<PartResource>();
-                data.to.GetConnectedResources(snacksResource.id, ResourceFlowMode.ALL_VESSEL, resources);
+                data.to.GetConnectedResources(snackResourceId, ResourceFlowMode.ALL_VESSEL, resources);
                 resources.First().amount = got;
                 resources.First().maxAmount = 1;
-                data.to.AddModule("EVANutritiveAnalyzer");
+                //data.to.AddModule("EVANutritiveAnalyzer");
             }
             catch (Exception ex)
             {
-                Debug.Log("Snacks - OnCrewOnEva " + ex.Message);
+                Debug.Log("Snacks - OnCrewOnEva " + ex.Message + ex.StackTrace);
             }
 
         }
@@ -136,14 +133,15 @@ namespace Snacks
                 if (currentTime > snackTime)
                 {
                     System.Random rand = new System.Random();
-                    snackTime = rand.NextDouble() * secondsInDay + currentTime;
+                    snackTime = rand.NextDouble() * snackFrequency + currentTime;
                     Debug.Log("Next Snack Time!:" + currentTime);
                     EatSnacks();
+                    SnackSnapshot.SetRebuildSnapshot();
                 }
             }
             catch (Exception ex)
             {
-                Debug.Log("Snacks - FixedUpdate: " + ex.Message);
+                Debug.Log("Snacks - FixedUpdate: " + ex.Message + ex.StackTrace);
             }
         }
 
@@ -156,7 +154,7 @@ namespace Snacks
             }
             catch (Exception ex)
             {
-                Debug.Log("Snacks - OnDestroy: " + ex.Message);
+                Debug.Log("Snacks - OnDestroy: " + ex.Message + ex.StackTrace);
             }
         }
 
@@ -190,7 +188,7 @@ namespace Snacks
 
             if (snacksMissed > 0)
             {
-                int fastingKerbals = Convert.ToInt32(snacksMissed/snacksPer);
+                int fastingKerbals = Convert.ToInt32(snacksMissed/snacksPerMeal);
                 double repLoss;
                 if (Reputation.CurrentRep > 0)
                     repLoss = fastingKerbals * lossPerDayPerKerbal * Reputation.Instance.reputation;

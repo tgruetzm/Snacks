@@ -156,6 +156,7 @@ namespace Snacks
             if ((demand + extra) <= 0)
                 return 0;
             double fed = GetSnackResource(v.rootPart, demand + extra);
+            Debug.Log("fed" + fed + v.vesselName);
             if (fed == 0)//unable to feed, no skipping or extra counted
                 return v.GetCrewCount() * snacksPer;
             return demand + extra - fed;

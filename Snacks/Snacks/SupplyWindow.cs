@@ -96,42 +96,24 @@ namespace Snacks
             TooltipsEnabled = true;
             scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(300), GUILayout.Width(300));
 
-            var ships = from ProtoVessel v in HighLogic.CurrentGame.flightState.protoVessels
-                        where v.GetVesselCrew().Count() > 0
-                        group v by v.orbitSnapShot.ReferenceBodyIndex into g
-                        select new { Body = g.Key ,Vessels = g };
+            Dictionary<string, List<ShipSupply>> snapshot = SnackSnapshot.Vessels();
 
-            foreach (var s in ships)
+            foreach (string planet in snapshot.Keys)
             {
-                GUILayout.Label(s.Vessels.First().vesselRef.mainBody.name + ":");
-                foreach (var v in s.Vessels)
+                GUILayout.Label(planet + ":");
+                List<ShipSupply> supplies;
+                snapshot.TryGetValue(planet,out supplies);
+                foreach (ShipSupply supply in supplies)
                 {
-                    double snackAmount = 0;
-                    double snackMax = 0;
-                    foreach (ProtoPartSnapshot pps in v.protoPartSnapshots)
-                    {
-                        var res = from r in pps.resources
-                                  where r.resourceName == "Snacks"
-                                  select r;
-                        if (res.Count() > 0)
-                        {
-                            ConfigNode node = res.First().resourceValues;
-                            snackAmount += Double.Parse(node.GetValue("amount"));
-                            snackMax += Double.Parse(node.GetValue("maxAmount"));
-
-                        }
-                    }
-                   int crew = v.GetVesselCrew().Count();
-                   int days = Convert.ToInt32(snackAmount/crew/.5);
-                    if(snackAmount/snackMax > .5)   
-                        GUILayout.Label(new GUIContent(v.vesselName + ": " + Convert.ToInt32(snackAmount) + "/" + Convert.ToInt32(snackMax),"Crew: " + crew + " Duration Estimate: " + days + " days"),regStyle);
-                    else if(snackAmount/snackMax > .25)
-                        GUILayout.Label(new GUIContent(v.vesselName + ": " + Convert.ToInt32(snackAmount) + "/" + Convert.ToInt32(snackMax), "Crew: " + crew + " Duration Estimate: " + days + " days"), yelStyle);
+                    if (supply.Percent > 50)
+                        GUILayout.Label(new GUIContent(supply.VesselName + ": " + supply.SnackAmount + "/" + supply.SnackMaxAmount, "Crew: " + supply.CrewCount  + "  Duration*: " + supply.DayEstimate + " days"), regStyle);
+                    else if (supply.Percent > 25)
+                        GUILayout.Label(new GUIContent(supply.VesselName + ": " + supply.SnackAmount + "/" + supply.SnackMaxAmount, "Crew: " + supply.CrewCount + "  Duration*: " + supply.DayEstimate + " days"), yelStyle);
                     else
-                        GUILayout.Label(new GUIContent(v.vesselName + ": " + Convert.ToInt32(snackAmount) + "/" + Convert.ToInt32(snackMax), "Crew: " + crew + " Duration Estimate: " + days + " days"), redStyle);
-
+                        GUILayout.Label(new GUIContent(supply.VesselName + ": " + supply.SnackAmount + "/" + supply.SnackMaxAmount, "Crew: " + supply.CrewCount + "  Duration*: " + supply.DayEstimate + " days"), redStyle);
                 }
             }
+           
             GUILayout.EndScrollView();
 
         }
