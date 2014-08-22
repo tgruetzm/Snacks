@@ -54,6 +54,7 @@ namespace Snacks
                 snackResourceId = snackConfig.SnackResourceId;
                 snackFrequency = 6 * 60 * 60 * 2 / snackConfig.MealsPerDay;
                 snacksPerMeal = snackConfig.SnacksPerMeal;
+                lossPerDayPerKerbal = snackConfig.LossPerDay;
                 consumer = new SnackConsumer(snackConfig.SnacksPerMeal, snackConfig.LossPerDay);
             }
             catch (Exception ex)
