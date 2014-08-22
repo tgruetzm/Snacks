@@ -25,6 +25,9 @@ Reputation decrease is based on your current reputation. If you are a reputable 
 v0.3 Alpha Features:
 ----------------------------
 -Supply Window!  Now you can actually tell how low on snacks your Kerbals are across the solar system.  The window is visible in the flight and space center scenes.  The data is a cache from the last snack time, so if you undock/eva that vessel won't be in the list until the next snack time.
+
 -The Supply Window shows all vessels with crew.  The vessels are listed by the body they are around.  Vessels with greater than 50% supply are shown in green, 50%-25% yellow and under 25% red.
+
 -Reduced the number of snacks in a day to 1.  Now Kerbals eat on average every 6 hours.
+
 -Added mealsPerDay to snacks.cfg.  Are your Kerbal's extra hungry?  well if you want you can feed them more or less depending on your tastes.
