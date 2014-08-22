@@ -26,8 +26,10 @@ v0.3 Alpha Features:
 ----------------------------
 -Supply Window!  Now you can actually tell how low on snacks your Kerbals are across the solar system.  The window is visible in the flight and space center scenes.  The data is a cache from the last snack time, so if you undock/eva that vessel won't be in the list until the next snack time.
 
--The Supply Window shows all vessels with crew.  The vessels are listed by the body they are around.  Vessels with greater than 50% supply are shown in green, 50%-25% yellow and under 25% red.
+-The Supply Window shows all vessels with crew.  The vessels are listed by the body they are around.  Vessels with greater than 50% supply are shown in green, 50%-25% yellow and under 25% red.  Tool tip shows the number of crew and an estimated number of Kerbin days the supply might last.
 
 -Reduced the number of snacks in a day to 1.  Now Kerbals eat on average every 6 hours.
 
 -Added mealsPerDay to snacks.cfg.  Are your Kerbal's extra hungry?  well if you want you can feed them more or less depending on your tastes.
+
+-Added 10 snacks to the Probodyne RoveMate.
