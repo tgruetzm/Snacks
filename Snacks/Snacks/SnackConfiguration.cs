@@ -66,6 +66,7 @@ namespace Snacks
             snacksPerMeal = double.Parse(node.GetValue("snacksPerMeal"));
             lossPerDayPerKerbal = double.Parse(node.GetValue("repLossPercent"));
             mealsPerDay = int.Parse(node.GetValue("mealsPerDay"));
+            Debug.Log("snacksPerMeal:" + snacksPerMeal + "mealsPerDay:" + mealsPerDay);
         
         }
 
