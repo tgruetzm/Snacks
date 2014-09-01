@@ -50,8 +50,11 @@ namespace Snacks
             {
                 GameEvents.onCrewOnEva.Add(OnCrewOnEva);
                 GameEvents.onCrewBoardVessel.Add(OnCrewBoardVessel);
-                GameEvents.onUndock.Add(OnUndock);
+                GameEvents.onPartUndock.Add(OnPartChange);
+                GameEvents.onPartDie.Add(OnPartChange);
                 GameEvents.onPartCouple.Add(OnDock);
+                GameEvents.onGameStateLoad.Add(onLoad);
+                GameEvents.onVesselRename.Add(OnRename);
                 SnackConfiguration snackConfig = SnackConfiguration.Instance();
                 snackResourceId = snackConfig.SnackResourceId;
                 snackFrequency = 6 * 60 * 60 * 2 / snackConfig.MealsPerDay;
@@ -77,14 +80,24 @@ namespace Snacks
             }
         }
 
-        private void OnUndock(EventReport data)
+        private void OnRename(GameEvents.HostedFromToAction<Vessel, string> data)
         {
-            //SnackSnapshot.SetRebuildSnapshot();
+            SnackSnapshot.SetRebuildSnapshot();
+        }
+
+        private void onLoad(ConfigNode node)
+        {
+            SnackSnapshot.SetRebuildSnapshot();
+        }
+
+        private void OnPartChange(Part data)
+        {
+            SnackSnapshot.SetRebuildSnapshot();
         }
 
         private void OnDock(GameEvents.FromToAction<Part, Part> data)
         {
-            //SnackSnapshot.SetRebuildSnapshot();
+            SnackSnapshot.SetRebuildSnapshot();
         }
 
 
@@ -98,7 +111,7 @@ namespace Snacks
                 List<PartResource> resources = new List<PartResource>();
                 data.to.GetConnectedResources(snackResourceId, ResourceFlowMode.ALL_VESSEL, resources);
                 resources.First().amount += got;
-                //SnackSnapshot.SetRebuildSnapshot();
+                SnackSnapshot.SetRebuildSnapshot();
             }
             catch (Exception ex)
             {
@@ -123,7 +136,7 @@ namespace Snacks
                 data.to.GetConnectedResources(snackResourceId, ResourceFlowMode.ALL_VESSEL, resources);
                 resources.First().amount = got;
                 resources.First().maxAmount = 1;
-                //SnackSnapshot.SetRebuildSnapshot();
+                SnackSnapshot.SetRebuildSnapshot();
                 //data.to.AddModule("EVANutritiveAnalyzer");
             }
             catch (Exception ex)
@@ -138,10 +151,10 @@ namespace Snacks
             try
             {
 
-                if (Time.timeSinceLevelLoad < 1.0f)
-                {
-                    return;
-                }
+              //  if (Time.timeSinceLevelLoad < 5.0f)
+               // {
+                //    return;
+               // }
 
                 double currentTime = Planetarium.GetUniversalTime();
 

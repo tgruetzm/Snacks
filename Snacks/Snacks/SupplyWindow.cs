@@ -80,6 +80,7 @@ namespace Snacks
         {
            
             hedStyle = new GUIStyle(GUI.skin.label);
+            //hedStyle.fontSize = hedStyle.fontSize + 2;
             regStyle = new GUIStyle(GUI.skin.label);
             regStyle.margin = new RectOffset(25, 0, 0, 0);
             redStyle = new GUIStyle(regStyle);
@@ -96,13 +97,16 @@ namespace Snacks
             TooltipsEnabled = true;
             scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(300), GUILayout.Width(300));
 
-            Dictionary<string, List<ShipSupply>> snapshot = SnackSnapshot.Vessels();
-
-            foreach (string planet in snapshot.Keys)
+            Dictionary<int, List<ShipSupply>> snapshot = SnackSnapshot.Vessels();
+            var keys = snapshot.Keys.ToList();
+            keys.Sort();
+            foreach (int planet in keys)
             {
-                GUILayout.Label(planet + ":");
+                
                 List<ShipSupply> supplies;
                 snapshot.TryGetValue(planet,out supplies);
+                //supplies.Sort();
+                GUILayout.Label(supplies.First().BodyName + ":", hedStyle);
                 foreach (ShipSupply supply in supplies)
                 {
                     if (supply.Percent > 50)
