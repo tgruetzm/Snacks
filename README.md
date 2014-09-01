@@ -6,6 +6,13 @@ Requirements:
 ----------------------------
 Snacks requires the use of module manager v2.2.1.  The latest version is provided in the release package.
 
+v0.3.1 Alpha Features:
+----------------------------
+-Fixed the bug where the supply window would show incorrect data after loading a new save file.
+
+-The supply window is now updated after certain game events(eva, docking/undocking, game load).  This should result in the supply window allways being accurate for the current situation.
+
+-Planets in the supply window are now sorted by their referenceBodyIndex, instead of showing up in odd orders at times.
 
 v0.3 Alpha Features:
 ----------------------------
