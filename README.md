@@ -12,7 +12,7 @@ v0.3.1 Alpha Features:
 
 -The supply window is now updated after certain game events(eva, docking/undocking, game load).  This should result in the supply window allways being accurate for the current situation.
 
--Planets in the supply window are now sorted by their referenceBodyIndex, instead of showing up in odd orders at times.
+-Planets in the supply window are now sorted by their referenceBodyIndex, instead of showing up in odd orders at times. Ships under the body are sorted by their supply level percent.
 
 v0.3 Alpha Features:
 ----------------------------
