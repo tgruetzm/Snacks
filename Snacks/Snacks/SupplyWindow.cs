@@ -97,7 +97,7 @@ namespace Snacks
             TooltipsEnabled = true;
             scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.Height(300), GUILayout.Width(300));
 
-            Dictionary<int, List<ShipSupply>> snapshot = SnackSnapshot.Vessels();
+            Dictionary<int, List<ShipSupply>> snapshot = SnackSnapshot.Instance().Vessels();
             var keys = snapshot.Keys.ToList();
             keys.Sort();
             foreach (int planet in keys)

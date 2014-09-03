@@ -82,22 +82,22 @@ namespace Snacks
 
         private void OnRename(GameEvents.HostedFromToAction<Vessel, string> data)
         {
-            SnackSnapshot.SetRebuildSnapshot();
+            SnackSnapshot.Instance().SetRebuildSnapshot();
         }
 
         private void onLoad(ConfigNode node)
         {
-            SnackSnapshot.SetRebuildSnapshot();
+            SnackSnapshot.Instance().SetRebuildSnapshot();
         }
 
         private void OnPartChange(Part data)
         {
-            SnackSnapshot.SetRebuildSnapshot();
+            SnackSnapshot.Instance().SetRebuildSnapshot();
         }
 
         private void OnDock(GameEvents.FromToAction<Part, Part> data)
         {
-            SnackSnapshot.SetRebuildSnapshot();
+            SnackSnapshot.Instance().SetRebuildSnapshot();
         }
 
 
@@ -111,7 +111,7 @@ namespace Snacks
                 List<PartResource> resources = new List<PartResource>();
                 data.to.GetConnectedResources(snackResourceId, ResourceFlowMode.ALL_VESSEL, resources);
                 resources.First().amount += got;
-                SnackSnapshot.SetRebuildSnapshot();
+                SnackSnapshot.Instance().SetRebuildSnapshot();
             }
             catch (Exception ex)
             {
@@ -136,7 +136,7 @@ namespace Snacks
                 data.to.GetConnectedResources(snackResourceId, ResourceFlowMode.ALL_VESSEL, resources);
                 resources.First().amount = got;
                 resources.First().maxAmount = 1;
-                SnackSnapshot.SetRebuildSnapshot();
+                SnackSnapshot.Instance().SetRebuildSnapshot();
                 //data.to.AddModule("EVANutritiveAnalyzer");
             }
             catch (Exception ex)
@@ -164,7 +164,7 @@ namespace Snacks
                     snackTime = rand.NextDouble() * snackFrequency + currentTime;
                     Debug.Log("Next Snack Time!:" + currentTime);
                     EatSnacks();
-                    SnackSnapshot.SetRebuildSnapshot();
+                    SnackSnapshot.Instance().SetRebuildSnapshot();
                 }
             }
             catch (Exception ex)

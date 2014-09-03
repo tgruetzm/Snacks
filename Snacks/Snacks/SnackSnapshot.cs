@@ -9,12 +9,37 @@ namespace Snacks
     class SnackSnapshot
     {
 
+        public event EventHandler SnackSnapShotChanged;
+
+        protected virtual void OnSnackSnapShotChanged(EventArgs e)
+        {
+            EventHandler handler = SnackSnapShotChanged;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+
         private SnackSnapshot()
         {}
 
-        private static Dictionary<int, List<ShipSupply>> vessels;
+        private static SnackSnapshot snapshot;
 
-        public static Dictionary<int, List<ShipSupply>> Vessels()
+        public static SnackSnapshot Instance()
+        {
+            if (snapshot == null)
+            {
+                snapshot = new SnackSnapshot();
+                snapshot.Vessels();
+            }
+            return snapshot;
+        }
+
+        private Dictionary<int, List<ShipSupply>> vessels;
+        private Dictionary<Guid, bool> outOfSnacks;
+
+        public Dictionary<int, List<ShipSupply>> Vessels()
         {
             try
             {
@@ -23,6 +48,7 @@ namespace Snacks
                     Debug.Log("rebuilding snapshot");
                     int snackResourceId = SnackConfiguration.Instance().SnackResourceId;
                     vessels = new Dictionary<int, List<ShipSupply>>();
+                    outOfSnacks = new Dictionary<Guid, bool>();
 
                     List<Guid> activeVessels = new List<Guid>();
 
@@ -51,6 +77,7 @@ namespace Snacks
                             supply.DayEstimate = Convert.ToInt32(snackAmount / supply.CrewCount / (SnackConfiguration.Instance().MealsPerDay * SnackConfiguration.Instance().SnacksPerMeal));
                             supply.Percent = snackMax == 0 ? 0 : Convert.ToInt32(snackAmount / snackMax * 100);
                             AddShipSupply(supply, v.protoVessel.orbitSnapShot.ReferenceBodyIndex);
+                            outOfSnacks.Add(v.id, snackAmount != 0.0 ? false : true);
                         }
                     }
 
@@ -90,6 +117,7 @@ namespace Snacks
                             supply.Percent = snackMax == 0 ? 0 : Convert.ToInt32(snackAmount / snackMax * 100);
                             //Debug.Log(pv.vesselName + supply.Percent);
                             AddShipSupply(supply, pv.orbitSnapShot.ReferenceBodyIndex);
+                            outOfSnacks.Add(pv.vesselID, snackAmount != 0.0 ? false : true);
 
                         }
                         
@@ -103,7 +131,7 @@ namespace Snacks
             return vessels;
         }
 
-        private static void AddShipSupply(ShipSupply supply, int planet)
+        private void AddShipSupply(ShipSupply supply, int planet)
         {
             if (!vessels.ContainsKey(planet))
                 vessels.Add(planet, new List<ShipSupply>());
@@ -113,10 +141,21 @@ namespace Snacks
             ships.Add(supply);
         }
 
-        public static void SetRebuildSnapshot()
+        public void SetRebuildSnapshot()
         {
             //Debug.Log("reset snapshot");
             vessels = null;
+            outOfSnacks = null;
+            OnSnackSnapShotChanged(EventArgs.Empty);
+        }
+
+        public bool IsShipOutOfSnacks(Guid id)
+        {
+            if (outOfSnacks == null)
+                Vessels();
+            bool value = false;
+            outOfSnacks.TryGetValue(id, out value);
+            return value;
         }
 
     }
