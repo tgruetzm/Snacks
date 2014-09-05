@@ -13,11 +13,15 @@ namespace Snacks
         double passedOutTime = -1;
         double currentTime = -1;
         double passedOutEnd = -1;
-        double passedOutDurationMax = 10;
+        double passedOutDurationMax = 3;
+        double passedOutDurationMin = 1;
         double passedOutIntervalMax = 30;
+
+        Queue<FlightState> flightState;
         FlightInputCallback flightInputCallback; 
         FlightCtrlState passedOutState;
         SnackSnapshot snackSnapshot;
+
 
 
         void Awake()
@@ -56,10 +60,11 @@ namespace Snacks
             {
                 Debug.Log("current ship out");
                 currentTime = Planetarium.GetUniversalTime();
-                passedOutTime = currentTime + RandomTime(passedOutIntervalMax);
-                passedOutEnd = passedOutTime + RandomTime(passedOutDurationMax);
+                passedOutTime = currentTime + RandomTime(0,passedOutIntervalMax);
+                passedOutEnd = passedOutTime + RandomTime(passedOutDurationMin,passedOutDurationMax);
                 flightInputCallback = new FlightInputCallback(PassedOutKerbal); ;
                 FlightGlobals.ActiveVessel.OnFlyByWire += flightInputCallback;
+                flightState = new Queue<FlightState>();
             }
             else
             {
@@ -77,29 +82,36 @@ namespace Snacks
 
         void PassedOutKerbal(FlightCtrlState state)
         {
-            currentTime = Planetarium.GetUniversalTime();
-            if (currentTime > passedOutTime && currentTime < passedOutEnd)
+            try
             {
-                if (passedOutState == null)
+                currentTime = Planetarium.GetUniversalTime();
+                if (currentTime > passedOutTime && currentTime < passedOutEnd)
                 {
-                    passedOutState = new FlightCtrlState();
-                    passedOutState.CopyFrom(state);
-                    ScreenMessages.PostScreenMessage("Kerbal passed out at the controls, no snacks!", 2, ScreenMessageStyle.UPPER_LEFT);
-                }
-                state.CopyFrom(passedOutState);
+                    if (passedOutState == null)
+                    {
+                        passedOutState = new FlightCtrlState();
+                        passedOutState.CopyFrom(state);
+                        ScreenMessages.PostScreenMessage("Kerbal passed out at the controls, no snacks!", 2, ScreenMessageStyle.UPPER_LEFT);
+                    }
+                    state.CopyFrom(passedOutState);
 
+                }
+                if (currentTime > passedOutEnd)
+                {
+                    passedOutTime = currentTime + RandomTime(0,passedOutIntervalMax);
+                    passedOutEnd = passedOutTime + RandomTime(passedOutDurationMin,passedOutDurationMax);
+                    passedOutState = null;
+                }
             }
-            if (currentTime > passedOutEnd)
+            catch (Exception ex)
             {
-                passedOutTime = currentTime + RandomTime(passedOutIntervalMax);
-                passedOutEnd = passedOutTime + RandomTime(passedOutDurationMax);
-                passedOutState = null;
+                Debug.Log("Snacks - PassedOutKerbal: " + ex.Message + ex.StackTrace);
             }
         }
 
-        double RandomTime(double max)
+        double RandomTime(double min, double max)
         {
-            return random.NextDouble() * max;
+            return random.NextDouble() * (max+min) - min;
         }
 
 
