@@ -17,9 +17,12 @@ namespace Snacks
         double passedOutDurationMin = 1;
         double passedOutIntervalMax = 30;
 
+        double delayMin = 1;
+        double delayMax = 2;
+
         Queue<FlightState> flightState;
         FlightInputCallback flightInputCallback; 
-        FlightCtrlState passedOutState;
+        FlightCtrlState lastState;
         SnackSnapshot snackSnapshot;
 
 
@@ -36,6 +39,7 @@ namespace Snacks
             GameEvents.onVesselChange.Add(OnVesselChange);
             snackSnapshot = SnackSnapshot.Instance();
             snackSnapshot.SnackSnapShotChanged += snackSnapshot_SnackSnapShotChanged;
+            CheckCurrentVesselState();
         }
 
         private void OnVesselChange(Vessel data)
@@ -85,23 +89,26 @@ namespace Snacks
             try
             {
                 currentTime = Planetarium.GetUniversalTime();
-                if (currentTime > passedOutTime && currentTime < passedOutEnd)
-                {
-                    if (passedOutState == null)
-                    {
-                        passedOutState = new FlightCtrlState();
-                        passedOutState.CopyFrom(state);
-                        ScreenMessages.PostScreenMessage("Kerbal passed out at the controls, no snacks!", 2, ScreenMessageStyle.UPPER_LEFT);
-                    }
-                    state.CopyFrom(passedOutState);
+                double waitTime = currentTime + 1;// RandomTime(delayMin, delayMax);
+                Debug.Log("ct:" + currentTime + " wt:" + waitTime + "stateP:" + state.pitch);
+                FlightCtrlState storeState = new FlightCtrlState();
+                storeState.CopyFrom(state);
+                flightState.Enqueue(new FlightState(storeState, waitTime));
 
-                }
-                if (currentTime > passedOutEnd)
+                
+                //Debug.Log("ct:" + currentTime + " tsTime:" + topState.Time + "tsPitch:" + topState.State.pitch);
+                while(flightState.Count > 0 && currentTime > flightState.Peek().Time)
                 {
-                    passedOutTime = currentTime + RandomTime(0,passedOutIntervalMax);
-                    passedOutEnd = passedOutTime + RandomTime(passedOutDurationMin,passedOutDurationMax);
-                    passedOutState = null;
+                    FlightState topState = flightState.Dequeue();
+                    state.CopyFrom(topState.State);
+                    Debug.Log("apply state pitch:" + state.pitch);
+                    lastState = topState.State;
+                    return;
                 }
+                if (lastState != null)
+                    state.CopyFrom(lastState);
+                else
+                    state.Neutralize();
             }
             catch (Exception ex)
             {

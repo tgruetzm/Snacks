@@ -53,6 +53,7 @@
   <ItemGroup>
     <Compile Include="EVANutritiveAnalyzer.cs" />
     <Compile Include="FlightController.cs" />
+    <Compile Include="FlightState.cs" />
     <Compile Include="KSPPluginFramework\ConfigNodeStorage.cs" />
     <Compile Include="KSPPluginFramework\ExtensionsUnity.cs" />
     <Compile Include="KSPPluginFramework\MonoBehaviourExtended.cs" />
