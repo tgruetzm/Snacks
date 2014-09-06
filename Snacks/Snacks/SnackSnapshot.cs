@@ -9,18 +9,6 @@ namespace Snacks
     class SnackSnapshot
     {
 
-        public event EventHandler SnackSnapShotChanged;
-
-        protected virtual void OnSnackSnapShotChanged(EventArgs e)
-        {
-            EventHandler handler = SnackSnapShotChanged;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
-        }
-
-
         private SnackSnapshot()
         {}
 
@@ -143,20 +131,9 @@ namespace Snacks
 
         public void SetRebuildSnapshot()
         {
-            //Debug.Log("reset snapshot");
             vessels = null;
-            outOfSnacks = null;
-            OnSnackSnapShotChanged(EventArgs.Empty);
-        }
-
-        public bool IsShipOutOfSnacks(Guid id)
-        {
-            if (outOfSnacks == null)
-                Vessels();
-            bool value = false;
-            outOfSnacks.TryGetValue(id, out value);
-            return value;
         }
 
     }
+
 }

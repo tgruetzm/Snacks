@@ -39,6 +39,9 @@ namespace Snacks
         private double lossPerDayPerKerbal;
         private int snackResourceId;
         private int mealsPerDay = 1;
+        private double delayedReaction;
+        private bool kerbalDeath;
+
         public double SnacksPerMeal
         {
             get { return snacksPerMeal; }
@@ -55,6 +58,16 @@ namespace Snacks
         {
             get { return mealsPerDay; }
         }
+        public double DelayedReaction
+        {
+            get { return delayedReaction; }
+        }
+        public bool KerbalDeath
+        {
+            get { return kerbalDeath; }
+        }
+
+
 
         private SnackConfiguration()
         {
@@ -66,6 +79,8 @@ namespace Snacks
             snacksPerMeal = double.Parse(node.GetValue("snacksPerMeal"));
             lossPerDayPerKerbal = double.Parse(node.GetValue("repLossPercent"));
             mealsPerDay = int.Parse(node.GetValue("mealsPerDay"));
+            delayedReaction = double.Parse(node.GetValue("delayedReaction"));
+            kerbalDeath = bool.Parse(node.GetValue("kerbalDeath"));
             Debug.Log("snacksPerMeal:" + snacksPerMeal + "mealsPerDay:" + mealsPerDay);
         
         }

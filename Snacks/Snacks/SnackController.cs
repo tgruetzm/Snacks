@@ -35,6 +35,18 @@ namespace Snacks
     [KSPAddon(KSPAddon.Startup.EveryScene, false)]
     public class SnackController : MonoBehaviour
     {
+
+        public static event EventHandler SnackTime;
+
+        protected virtual void OnSnackTime(EventArgs e)
+        {
+            EventHandler handler = SnackTime;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
         private double snackTime = -1;
         private System.Random random = new System.Random();
 
@@ -43,6 +55,7 @@ namespace Snacks
         private double lossPerDayPerKerbal;
         private int snackResourceId;
         private int snackFrequency;
+        private bool kerbalDeath;
 
         void Awake()
         {
@@ -50,16 +63,16 @@ namespace Snacks
             {
                 GameEvents.onCrewOnEva.Add(OnCrewOnEva);
                 GameEvents.onCrewBoardVessel.Add(OnCrewBoardVessel);
-                GameEvents.onPartUndock.Add(OnPartChange);
-                GameEvents.onPartDie.Add(OnPartChange);
-                GameEvents.onPartCouple.Add(OnDock);
                 GameEvents.onGameStateLoad.Add(onLoad);
                 GameEvents.onVesselRename.Add(OnRename);
+                GameEvents.onVesselChange.Add(OnVesselChange);
+                GameEvents.onVesselWasModified.Add(OnVesselWasModified);
                 SnackConfiguration snackConfig = SnackConfiguration.Instance();
                 snackResourceId = snackConfig.SnackResourceId;
                 snackFrequency = 6 * 60 * 60 * 2 / snackConfig.MealsPerDay;
                 snacksPerMeal = snackConfig.SnacksPerMeal;
                 lossPerDayPerKerbal = snackConfig.LossPerDay;
+                kerbalDeath = snackConfig.KerbalDeath;
                 consumer = new SnackConsumer(snackConfig.SnacksPerMeal, snackConfig.LossPerDay);
             }
             catch (Exception ex)
@@ -68,6 +81,7 @@ namespace Snacks
             }
             
         }
+
         void Start()
         {
             try
@@ -80,34 +94,37 @@ namespace Snacks
             }
         }
 
+        private void OnVesselWasModified(Vessel data)
+        {
+            //Debug.Log("OnVesselWasModified");
+            SnackSnapshot.Instance().SetRebuildSnapshot();
+        }
+
+        private void OnVesselChange(Vessel data)
+        {
+            //Debug.Log("OnVesselChange");
+            SnackSnapshot.Instance().SetRebuildSnapshot();
+        }
+
         private void OnRename(GameEvents.HostedFromToAction<Vessel, string> data)
         {
+            //Debug.Log("OnRename");
             SnackSnapshot.Instance().SetRebuildSnapshot();
         }
 
         private void onLoad(ConfigNode node)
         {
+            //Debug.Log("onLoad");
             SnackSnapshot.Instance().SetRebuildSnapshot();
         }
-
-        private void OnPartChange(Part data)
-        {
-            SnackSnapshot.Instance().SetRebuildSnapshot();
-        }
-
-        private void OnDock(GameEvents.FromToAction<Part, Part> data)
-        {
-            SnackSnapshot.Instance().SetRebuildSnapshot();
-        }
-
 
         private void OnCrewBoardVessel(GameEvents.FromToAction<Part, Part> data)
         {
             try
             {
-                Debug.Log("EVA End");
+                //Debug.Log("EVA End");
                 double got = consumer.GetSnackResource(data.from, 1.0);
-                Debug.Log("EVA Got:" + got);
+                //Debug.Log("EVA Got:" + got);
                 List<PartResource> resources = new List<PartResource>();
                 data.to.GetConnectedResources(snackResourceId, ResourceFlowMode.ALL_VESSEL, resources);
                 resources.First().amount += got;
@@ -123,9 +140,9 @@ namespace Snacks
         {
             try
             {
-                Debug.Log("EVA start");
+                //Debug.Log("EVA start");
                 double got = consumer.GetSnackResource(data.from, 1.0);
-                Debug.Log("EVA Got:" + got);
+                //Debug.Log("EVA Got:" + got);
                 if (!data.to.Resources.Contains(snackResourceId))
                 {
                     ConfigNode node = new ConfigNode("RESOURCE");
@@ -150,11 +167,6 @@ namespace Snacks
         {
             try
             {
-
-              //  if (Time.timeSinceLevelLoad < 5.0f)
-               // {
-                //    return;
-               // }
 
                 double currentTime = Planetarium.GetUniversalTime();
 
@@ -188,42 +200,62 @@ namespace Snacks
 
         private void EatSnacks()
         {
-            double snacksMissed = 0;
-            foreach (ProtoVessel pv in HighLogic.CurrentGame.flightState.protoVessels)
-            {  
-                if (pv.GetVesselCrew().Count > 0)
+            try
+            {
+                List<Guid> activeVessels = new List<Guid>();
+                double snacksMissed = 0;
+                foreach (Vessel v in FlightGlobals.Vessels)
                 {
-                    if (!pv.vesselRef.loaded)
+                    if (v.GetCrewCount() > 0 && v.loaded)
                     {
-                        double snacks = consumer.RemoveSnacks(pv);
+                        activeVessels.Add(v.id);
+                        double snacks = consumer.RemoveSnacks(v);
                         snacksMissed += snacks;
                         if (snacks > 0)
-                            Debug.Log("No snacks for: " + pv.vesselName);
+                            Debug.Log("No snacks for: " + v.vesselName);
+                    }
+
+                }
+
+                foreach (ProtoVessel pv in HighLogic.CurrentGame.flightState.protoVessels)
+                {
+                    if (pv.GetVesselCrew().Count > 0)
+                    {
+                        if (!pv.vesselRef.loaded && !activeVessels.Contains(pv.vesselID))
+                        {
+                            double snacks = consumer.RemoveSnacks(pv);
+                            snacksMissed += snacks;
+                            if (snacks > 0)
+                                Debug.Log("No snacks for: " + pv.vesselName);
+                        }
                     }
                 }
-            }
-            foreach (Vessel v in FlightGlobals.Vessels)
-            {
-                if(v.GetCrewCount()> 0)
-                {
-                    double snacks = consumer.RemoveSnacks(v);
-                    snacksMissed += snacks;
-                    if(snacks > 0)
-                        Debug.Log("No snacks for: " + v.vesselName);
-                }
-            
-            }
 
-            if (snacksMissed > 0)
+                if (snacksMissed > 0)
+                {
+                    int fastingKerbals = Convert.ToInt32(snacksMissed / snacksPerMeal);
+                    if (HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
+                    {
+                        double repLoss;
+                        if (Reputation.CurrentRep > 0)
+                            repLoss = fastingKerbals * lossPerDayPerKerbal * Reputation.Instance.reputation;
+                        else
+                            repLoss = fastingKerbals;
+
+                        Reputation.Instance.AddReputation(Convert.ToSingle(-1 * repLoss), fastingKerbals + " Kerbals out of snacks!");
+                        ScreenMessages.PostScreenMessage(fastingKerbals + " Kerbals didn't have any snacks(reputation decreased by " + Convert.ToInt32(repLoss) + ")", 5, ScreenMessageStyle.UPPER_LEFT);
+                    }
+                    else
+                    {
+                        ScreenMessages.PostScreenMessage(fastingKerbals + " Kerbals didn't have any snacks.", 5, ScreenMessageStyle.UPPER_LEFT);
+                    }
+                }
+                OnSnackTime(EventArgs.Empty);
+                
+            }
+            catch (Exception ex)
             {
-                int fastingKerbals = Convert.ToInt32(snacksMissed/snacksPerMeal);
-                double repLoss;
-                if (Reputation.CurrentRep > 0)
-                    repLoss = fastingKerbals * lossPerDayPerKerbal * Reputation.Instance.reputation;
-                else
-                    repLoss = fastingKerbals;
-                Reputation.Instance.AddReputation(Convert.ToSingle(-1 * repLoss), fastingKerbals + " Kerbals out of snacks!");
-                ScreenMessages.PostScreenMessage(fastingKerbals + " Kerbals didn't have any snacks(reputation decreased by " + Convert.ToInt32(repLoss) + ")",5, ScreenMessageStyle.UPPER_LEFT);
+                Debug.Log("Snacks - EatSnacks: " + ex.Message + ex.StackTrace);
             }
         }
 
@@ -233,5 +265,7 @@ namespace Snacks
 
             //Debug.Log(pv.ctrlState);
         }
+
+
     }
 }

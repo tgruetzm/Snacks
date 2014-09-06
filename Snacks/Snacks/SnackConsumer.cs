@@ -134,7 +134,7 @@ namespace Snacks
         {
             double demand = pv.GetVesselCrew().Count * snacksPer;
             double extra = CalculateExtraSnacksRequired(pv.GetVesselCrew());
-            Debug.Log("SnackDemand(" + pv.vesselName +"): e: " + extra + " r:" + demand);
+            //Debug.Log("SnackDemand(" + pv.vesselName +"): e: " + extra + " r:" + demand);
             if ((demand + extra) <= 0)
                 return 0;
             double fed = GetSnackResource(pv.protoPartSnapshots, demand + extra);
@@ -152,11 +152,11 @@ namespace Snacks
 
             double demand = v.GetVesselCrew().Count * snacksPer;
             double extra = CalculateExtraSnacksRequired(v.GetVesselCrew());
-            Debug.Log("SnackDemand(" + v.vesselName + "): e: " + extra + " r:" + demand);
+            //Debug.Log("SnackDemand(" + v.vesselName + "): e: " + extra + " r:" + demand);
             if ((demand + extra) <= 0)
                 return 0;
             double fed = GetSnackResource(v.rootPart, demand + extra);
-            Debug.Log("fed" + fed + v.vesselName);
+            //Debug.Log("fed" + fed + v.vesselName);
             if (fed == 0)//unable to feed, no skipping or extra counted
                 return v.GetCrewCount() * snacksPer;
             return demand + extra - fed;

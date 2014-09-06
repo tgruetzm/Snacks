@@ -1,4 +1,29 @@
-﻿using System;
+﻿/**
+The MIT License (MIT)
+Copyright (c) 2014 Troy Gruetzmacher
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+ * 
+ * 
+ * */
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,22 +35,16 @@ namespace Snacks
     public class FlightController : MonoBehaviour
     {
         System.Random random = new System.Random();
-        double passedOutTime = -1;
-        double currentTime = -1;
-        double passedOutEnd = -1;
-        double passedOutDurationMax = 3;
-        double passedOutDurationMin = 1;
-        double passedOutIntervalMax = 30;
 
-        double delayMin = 1;
-        double delayMax = 2;
+        double currentTime;
+
+        double delayTime = .15;
+ 
 
         Queue<FlightState> flightState;
-        FlightInputCallback flightInputCallback; 
         FlightCtrlState lastState;
-        SnackSnapshot snackSnapshot;
-
-
+        Vessel currentVessel;
+        bool currentVesselOut = false;
 
         void Awake()
         {
@@ -34,47 +53,67 @@ namespace Snacks
 
         void Start()  //Called when vessel is placed on the launchpad
         {
-            Debug.Log("Snacks - Start FlightController");
+            delayTime = SnackConfiguration.Instance().DelayedReaction;
 
-            GameEvents.onVesselChange.Add(OnVesselChange);
-            snackSnapshot = SnackSnapshot.Instance();
-            snackSnapshot.SnackSnapShotChanged += snackSnapshot_SnackSnapShotChanged;
+            if (delayTime > 0)
+            {
+                Debug.Log("Snacks - Start FlightController");
+
+                GameEvents.onVesselChange.Add(OnVesselChangeMod);
+                GameEvents.onFlightReady.Add(OnFlightReady);
+                GameEvents.onVesselWasModified.Add(OnVesselChangeMod);
+                SnackController.SnackTime += SnackController_SnackTime;
+            }
+        }
+
+        void SnackController_SnackTime(object sender, EventArgs e)
+        {
             CheckCurrentVesselState();
         }
 
-        private void OnVesselChange(Vessel data)
+        private void OnVesselChangeMod(Vessel data)
         {
-            Debug.Log("OnVesselChange");
+            Debug.Log("OnVesselChangeMod");
             CheckCurrentVesselState();
         }
 
-        private void snackSnapshot_SnackSnapShotChanged(object sender, EventArgs e)
+        private void OnFlightReady()
         {
-            Debug.Log("snack snapshotChanged");
+            Debug.Log("OnFlightReady");
             CheckCurrentVesselState();
         }
 
         private void CheckCurrentVesselState()
         {
-            if (!FlightGlobals.ready)
-                return;
-            Debug.Log("Checking Current Vessel State");
-            bool outOfSnacks = snackSnapshot.IsShipOutOfSnacks(FlightGlobals.ActiveVessel.id);
-            if (outOfSnacks)
+            try
             {
-                Debug.Log("current ship out");
-                currentTime = Planetarium.GetUniversalTime();
-                passedOutTime = currentTime + RandomTime(0,passedOutIntervalMax);
-                passedOutEnd = passedOutTime + RandomTime(passedOutDurationMin,passedOutDurationMax);
-                flightInputCallback = new FlightInputCallback(PassedOutKerbal); ;
-                FlightGlobals.ActiveVessel.OnFlyByWire += flightInputCallback;
-                flightState = new Queue<FlightState>();
+                if (FlightGlobals.ActiveVessel == null)
+                    return;
+                bool outOfSnacks = IsOutOfSnacks(FlightGlobals.ActiveVessel);
+                if (FlightGlobals.ActiveVessel != currentVessel || outOfSnacks != currentVesselOut)
+                {
+                    currentVesselOut = outOfSnacks;
+                    if(currentVessel != null)
+                        currentVessel.OnFlyByWire -= new FlightInputCallback(GrumpyKerbal);
+                    
+                    if (outOfSnacks)
+                    {
+                        Debug.Log("current ship out of snacks");
+                        ScreenMessages.PostScreenMessage("The current vessel is out of snacks.  Kerbals may exhibit delayed reactions.  Resupply ASAP!", 5, ScreenMessageStyle.UPPER_LEFT);
+                        FlightGlobals.ActiveVessel.OnFlyByWire += new FlightInputCallback(GrumpyKerbal);
+                        flightState = new Queue<FlightState>();
+                    }
+                    else
+                    {
+                        Debug.Log("current ship has snacks");
+                        FlightGlobals.ActiveVessel.OnFlyByWire -= new FlightInputCallback(GrumpyKerbal);
+                    } 
+                }
+                currentVessel = FlightGlobals.ActiveVessel;  
             }
-            else
+            catch (Exception ex)
             {
-                Debug.Log("current ship has snacks");
-                if (flightInputCallback != null)
-                    FlightGlobals.ActiveVessel.OnFlyByWire -= flightInputCallback;
+                Debug.Log("Snacks - CheckVesselState: " + ex.Message + ex.StackTrace);
             }
         }
 
@@ -82,26 +121,25 @@ namespace Snacks
         void OnDestroy()
         {
             Debug.Log("Snacks - Start FlightController Destroyed");
+            FlightGlobals.ActiveVessel.OnFlyByWire -= new FlightInputCallback(GrumpyKerbal);
         }
 
-        void PassedOutKerbal(FlightCtrlState state)
+        void GrumpyKerbal(FlightCtrlState state)
         {
             try
             {
                 currentTime = Planetarium.GetUniversalTime();
-                double waitTime = currentTime + 1;// RandomTime(delayMin, delayMax);
-                Debug.Log("ct:" + currentTime + " wt:" + waitTime + "stateP:" + state.pitch);
+                double waitTime = currentTime + delayTime;
                 FlightCtrlState storeState = new FlightCtrlState();
                 storeState.CopyFrom(state);
                 flightState.Enqueue(new FlightState(storeState, waitTime));
 
                 
-                //Debug.Log("ct:" + currentTime + " tsTime:" + topState.Time + "tsPitch:" + topState.State.pitch);
-                while(flightState.Count > 0 && currentTime > flightState.Peek().Time)
+               
+                while(currentTime > flightState.Peek().Time)
                 {
                     FlightState topState = flightState.Dequeue();
                     state.CopyFrom(topState.State);
-                    Debug.Log("apply state pitch:" + state.pitch);
                     lastState = topState.State;
                     return;
                 }
@@ -112,17 +150,33 @@ namespace Snacks
             }
             catch (Exception ex)
             {
-                Debug.Log("Snacks - PassedOutKerbal: " + ex.Message + ex.StackTrace);
+                Debug.Log("Snacks - GrumpyKerbal: " + ex.Message + ex.StackTrace);
             }
         }
 
-        double RandomTime(double min, double max)
+        private double RandomTime(double min, double max)
         {
             return random.NextDouble() * (max+min) - min;
         }
 
-
-
+        private bool IsOutOfSnacks(Vessel v)
+        {
+            if (v.GetVesselCrew().Count > 0)
+            {
+                List<PartResource> resources = new List<PartResource>();
+                v.rootPart.GetConnectedResources(SnackConfiguration.Instance().SnackResourceId, ResourceFlowMode.ALL_VESSEL, resources);
+                foreach (PartResource r in resources)
+                {
+                    if (r.amount > 0)
+                        return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+            return true;
+        }
 
     }
 }
