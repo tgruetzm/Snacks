@@ -38,6 +38,7 @@ namespace Snacks
         private double snacksPerMeal;
         private double lossPerDayPerKerbal;
         private int snackResourceId;
+        private int soilResourceId;
         private int mealsPerDay = 1;
         private double delayedReaction;
         private bool kerbalDeath;
@@ -53,6 +54,10 @@ namespace Snacks
         public int SnackResourceId
         {
             get { return snackResourceId; }
+        }
+        public int SoilResourceId
+        {
+            get { return soilResourceId; }
         }
         public int MealsPerDay
         {
@@ -73,6 +78,8 @@ namespace Snacks
         {
             PartResourceDefinition snacksResource = PartResourceLibrary.Instance.GetDefinition("Snacks");
             snackResourceId = snacksResource.id;
+            PartResourceDefinition soilResource = PartResourceLibrary.Instance.GetDefinition("Soil");
+            soilResourceId = soilResource.id;
             string file = IOUtils.GetFilePathFor(this.GetType(), "snacks.cfg");
             Debug.Log("loading file:" + file);
             node = ConfigNode.Load(file).GetNode("SNACKS");

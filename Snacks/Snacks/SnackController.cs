@@ -54,6 +54,7 @@ namespace Snacks
         private double snacksPerMeal;
         private double lossPerDayPerKerbal;
         private int snackResourceId;
+        private int soilResourceId;
         private int snackFrequency;
         private bool kerbalDeath;
 
@@ -69,6 +70,7 @@ namespace Snacks
                 GameEvents.onVesselWasModified.Add(OnVesselWasModified);
                 SnackConfiguration snackConfig = SnackConfiguration.Instance();
                 snackResourceId = snackConfig.SnackResourceId;
+                soilResourceId = snackConfig.SoilResourceId;
                 snackFrequency = 6 * 60 * 60 * 2 / snackConfig.MealsPerDay;
                 snacksPerMeal = snackConfig.SnacksPerMeal;
                 lossPerDayPerKerbal = snackConfig.LossPerDay;
@@ -154,7 +156,19 @@ namespace Snacks
                 resources.First().amount = got;
                 resources.First().maxAmount = 1;
                 SnackSnapshot.Instance().SetRebuildSnapshot();
-                //data.to.AddModule("EVANutritiveAnalyzer");
+
+                if (!data.to.Resources.Contains(soilResourceId))
+                {
+                    ConfigNode node = new ConfigNode("RESOURCE");
+                    node.AddValue("name", "Soil");
+                    data.to.Resources.Add(node);
+                }
+                resources = new List<PartResource>();
+                data.to.GetConnectedResources(soilResourceId, ResourceFlowMode.ALL_VESSEL, resources);
+                resources.First().amount = 0;
+                resources.First().maxAmount = 1;
+
+                data.to.AddModule("EVANutritiveAnalyzer");
             }
             catch (Exception ex)
             {
@@ -174,7 +188,7 @@ namespace Snacks
                 {
                     System.Random rand = new System.Random();
                     snackTime = rand.NextDouble() * snackFrequency + currentTime;
-                    Debug.Log("Next Snack Time!:" + currentTime);
+                    Debug.Log("Snack time!  Next Snack Time!:" + currentTime);
                     EatSnacks();
                     SnackSnapshot.Instance().SetRebuildSnapshot();
                 }

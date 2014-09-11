@@ -33,61 +33,86 @@ namespace Snacks
     class EVANutritiveAnalyzer : PartModule
     {
 
-        [KSPField(isPersistant = true, guiActive = true, guiName = "Nutritive value:")]
-        public double sampleAnalysis = 0;
+        //[KSPField(isPersistant = true, guiActive = true, guiName = "Soil Quantity:", guiUnits="%")]
+        //public int soilQuantity = 0;
+
+        private const double maxQuantity = .5;
+        private const double soilChangeDistance = 0.005;
+        private const double kerbalMass = 0.09375;
+
+        private int soilResourceId = SnackConfiguration.Instance().SoilResourceId;
 
         private double latitude = 0;
         private double longitude = 0;
 
-        [KSPEvent(guiActive = true, guiName = "Perform Nutritive Analysis")]
-        public void NutritiveAnalysis()
+        [KSPEvent(guiActive = true, guiName = "Gather Soil")]
+        public void GatherSoil()
         {
-            ScreenMessages.PostScreenMessage("Performing Nutritive Analysis", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-
-            Vessel eva = FlightGlobals.ActiveVessel;
-            if (!eva.Landed)
+            try
             {
-                sampleAnalysis = 0;
-                return;
+                if (latitude == 0 && longitude == 0)
+                {
+                    latitude = this.vessel.latitude;
+                    longitude = this.vessel.longitude;
+                    System.Random rand = new System.Random();
+                    double newQty = rand.NextDouble() * maxQuantity;
+                    AddRemoveSoil(this.vessel.rootPart, newQty);
+                    ScreenMessages.PostScreenMessage("This soil has some potential.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    return;
+                }
+                //Debug.Log("lat:" + this.vessel.latitude + " long:" + this.vessel.longitude + " slat:" + latitude + "slong:" + longitude);
+                double diff1 = Math.Abs(this.vessel.latitude - latitude);
+                double diff2 = Math.Abs(this.vessel.longitude - longitude);
+                bool isSoilFull = false;
+                //Debug.Log("diff1:" + diff1 + " diff2:" + diff2);
+                if (diff1 < soilChangeDistance && diff2 < soilChangeDistance)
+                {
+                    ScreenMessages.PostScreenMessage("The soil hasn't changed much, better look somewhere else.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                }
+                else
+                {
+                    latitude = this.vessel.latitude;
+                    longitude = this.vessel.longitude;
+                    System.Random rand = new System.Random();
+                    double newQty = rand.NextDouble() * maxQuantity;
+                    AddRemoveSoil(this.vessel.rootPart, newQty);
+                    ScreenMessages.PostScreenMessage("This soil has some potential.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                }
+                if (isSoilFull)
+                {
+                    Events["GatherSoil"].active = false;
+                    ScreenMessages.PostScreenMessage("You can't carry anymore.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                }
             }
-            if (latitude == 0 && longitude == 0)
+            catch (Exception ex)
             {
-                latitude = eva.latitude;
-                longitude = eva.longitude;
-                System.Random rand = new System.Random();
-                sampleAnalysis = rand.NextDouble() * 200;
-                return;
+                Debug.Log("Snacks - GatherSoil: " + ex.Message + ex.StackTrace);
             }
-            Debug.Log("lat:" + eva.latitude + " long:" + eva.longitude + " slat:" + latitude + "slong:" + longitude);
-            double diff1 = Math.Abs(eva.latitude - latitude);
-            double diff2 = Math.Abs(eva.longitude - longitude);
-            Debug.Log("diff1:" + diff1 + " diff2:" + diff2);
-            if (diff1 < .01 && diff2 < .01)
-            {
-                ScreenMessages.PostScreenMessage("The soil hasn't changed much, better look somewhere else.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-            }
-            else
-            {
-                //ScreenMessages.PostScreenMessage("The soil changed.", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                latitude = eva.latitude;
-                longitude = eva.longitude;
-                System.Random rand = new System.Random();
-                sampleAnalysis = rand.NextDouble() * 200 + 50;
-            }
-
-            // This will hide the Activate event, and show the Deactivate event.
-            //Events["NutritiveAnalysis"].active = false;
-            //Events["NutritiveAnalysis"].active = true;
         }
 
-        [KSPEvent(guiActive = true, guiName = "Deactivate Snack Factory", active = false)]
-        public void DeactivateEvent()
+        [KSPEvent(guiActive = true, guiName = "Dump Soil")]
+        public void DumpSoil()
         {
-            ScreenMessages.PostScreenMessage("Clicked Deactivate", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+            this.AddRemoveSoil(this.vessel.rootPart, Double.MinValue);
+            Events["GatherSoil"].active = true;
+        }
 
-            // This will hide the Deactivate event, and show the Activate event.
-           // Events["ActivateEvent"].active = true;
-           // Events["DeactivateEvent"].active = false;
+        public bool AddRemoveSoil(Part p, double value)
+        {
+            Debug.Log("adding soil:" + value);
+            List<PartResource> resources = new List<PartResource>();
+            p.GetConnectedResources(soilResourceId, ResourceFlowMode.ALL_VESSEL, resources);
+            PartResource pr = resources.First();
+            pr.amount += value;
+            if (pr.amount < 0)
+                pr.amount = 0;
+            if (pr.amount >= pr.maxAmount)
+            {
+                pr.amount = pr.maxAmount;
+                return true;
+            }
+            p.mass = kerbalMass + pr.amount * kerbalMass;
+            return false;
         }
 
         /*
@@ -96,16 +121,7 @@ namespace Snacks
         public override void OnAwake()
         {
             Debug.Log("Nutritive Analyzer OnAwake()");
-        }
-
-        /*
-         * Called when the part is activated/enabled. This usually occurs either when the craft
-         * is launched or when the stage containing the part is activated.
-         * You can activate your part manually by calling part.force_activate().
-         */
-        public override void OnActive()
-        {
-            Debug.Log("Snacks - Nutritive Analyzere");
+            GameEvents.onVesselSituationChange.Add(OnVesselSituationChange);
         }
 
         /*
@@ -113,23 +129,6 @@ namespace Snacks
          */
         public override void OnStart(PartModule.StartState state)
         {
-        }
-
-
-        /*
-         * KSP adds the return value to the information box in the VAB/SPH.
-         */
-        public override string GetInfo()
-        {
-            return "Generates snacks";
-        }
-
-        /*
-         * Called when the part is deactivated. Usually because it was destroyed.
-         */
-        public override void OnInactive()
-        {
-            Debug.Log("Snacks - Start FlightController Destroyed");
         }
 
         /*
@@ -147,6 +146,19 @@ namespace Snacks
         public override void OnSave(ConfigNode node)
         {
 
+        }
+
+        public void OnVesselSituationChange(GameEvents.HostedFromToAction<Vessel, Vessel.Situations> change) 
+        {
+            //Debug.Log("SitChange to:" + change.to + " from:" + change.from);
+            if (change.from == Vessel.Situations.LANDED && change.to == Vessel.Situations.FLYING)
+            {
+                Events["GatherSoil"].active = false;
+            }
+            else if (change.from == Vessel.Situations.FLYING && change.to == Vessel.Situations.LANDED)
+            {
+                Events["GatherSoil"].active = true;
+            }
         }
     }
 }

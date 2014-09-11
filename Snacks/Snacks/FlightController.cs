@@ -99,7 +99,7 @@ namespace Snacks
                     if (outOfSnacks)
                     {
                         Debug.Log("current ship out of snacks");
-                        ScreenMessages.PostScreenMessage("The current vessel is out of snacks.  Kerbals may exhibit delayed reactions.  Resupply ASAP!", 5, ScreenMessageStyle.UPPER_LEFT);
+                        ScreenMessages.PostScreenMessage("You are out of snacks.  Kerbals may exhibit delayed reactions.  Resupply ASAP!", 5, ScreenMessageStyle.UPPER_LEFT);
                         FlightGlobals.ActiveVessel.OnFlyByWire += new FlightInputCallback(GrumpyKerbal);
                         flightState = new Queue<FlightState>();
                     }

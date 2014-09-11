@@ -31,27 +31,50 @@ using UnityEngine;
 
 namespace Snacks
 {
-    class SnackFactory : PartModule
+    class SnackLab : PartModule
     {
 
-        [KSPEvent(guiActive = true, guiName = "Activate Snack Factory")]
-        public void ActivateEvent()
-        {
-            ScreenMessages.PostScreenMessage("Clicked Activate", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+        [KSPField(isPersistant = true, guiActive = true, guiName = "Snack Lab:")]
+        public string snackLabStatus;
 
-            // This will hide the Activate event, and show the Deactivate event.
-            Events["ActivateEvent"].active = false;
-            Events["DeactivateEvent"].active = true;
+        [KSPField(isPersistant = true)]
+        public int snacksInProcess = 0;
+
+        [KSPEvent(guiActive = true, guiName = "Process Snacks")]
+        public void ProcessEvent()
+        {
+           
         }
 
-        [KSPEvent(guiActive = true, guiName = "Deactivate Snack Factory", active = false)]
-        public void DeactivateEvent()
+        [KSPEvent(guiActive = true, guiName = "Analyze Sample(s)", active = true)]
+        public void AnalyzeEvent()
         {
-            ScreenMessages.PostScreenMessage("Clicked Deactivate", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-
-            // This will hide the Deactivate event, and show the Activate event.
-            Events["ActivateEvent"].active = true;
-            Events["DeactivateEvent"].active = false;
+            try
+            {
+                //ScreenMessages.PostScreenMessage("Processing samples", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                Debug.Log("Analyze Snacks" + this.part.name);
+                int soilCount = 0;
+                int waterCount = 0;
+                var science = this.part.Modules.OfType<ModuleScienceContainer>();
+                Debug.Log("Process Snacks" + science);
+                foreach (ModuleScienceContainer se in science)
+                {
+                    foreach (ScienceData sd in se.GetData())
+                    {
+                        Debug.Log("Process Snacks" + sd.title);
+                        if (sd.title.Contains("surfaceSample") && sd.title.Contains("Water"))
+                            ScreenMessages.PostScreenMessage("contains surface sample!!", 5.0f, ScreenMessageStyle.UPPER_CENTER);
+                    }
+                }
+                snackLabStatus = "Processing";
+                // This will hide the Activate event, and show the Deactivate event.
+                Events["ProcessEvent"].active = true;
+                //Events["DeactivateEvent"].active = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Snacks - ProcessEvent: " + ex.Message + ex.StackTrace);
+            }
         }
 
         /*
