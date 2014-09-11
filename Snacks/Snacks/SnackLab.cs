@@ -34,55 +34,68 @@ namespace Snacks
     class SnackLab : PartModule
     {
 
-        [KSPField(isPersistant = true, guiActive = true, guiName = "Snack Lab:")]
-        public string snackLabStatus;
+        private int soilResourceId = SnackConfiguration.Instance().SoilResourceId;
+        private int snacksResourceId = SnackConfiguration.Instance().SnackResourceId;
+        private int elecResourceId;
 
         [KSPField(isPersistant = true)]
-        public int snacksInProcess = 0;
+        public bool processingStatus = false;
+        [KSPField(isPersistant = true)]
+        public double nextProcessingTime = 0;
+
+        private double processingElecRate = 10;
+        private double snackCompleteInterval = 10;
+        private double snacksPerInterval = 1;
+        private double soilPerInterval = .01;
 
         [KSPEvent(guiActive = true, guiName = "Process Snacks")]
         public void ProcessEvent()
         {
-           
+            processingStatus = true;
+            Events["ProcessEvent"].active = false;
         }
-
-        [KSPEvent(guiActive = true, guiName = "Analyze Sample(s)", active = true)]
-        public void AnalyzeEvent()
+        [KSPEvent(guiActiveUnfocused = true, unfocusedRange = 5f, guiName = "Transfer Soil to Lab")]
+        public void TransferSoil()
         {
             try
             {
-                //ScreenMessages.PostScreenMessage("Processing samples", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                Debug.Log("Analyze Snacks" + this.part.name);
-                int soilCount = 0;
-                int waterCount = 0;
-                var science = this.part.Modules.OfType<ModuleScienceContainer>();
-                Debug.Log("Process Snacks" + science);
-                foreach (ModuleScienceContainer se in science)
-                {
-                    foreach (ScienceData sd in se.GetData())
-                    {
-                        Debug.Log("Process Snacks" + sd.title);
-                        if (sd.title.Contains("surfaceSample") && sd.title.Contains("Water"))
-                            ScreenMessages.PostScreenMessage("contains surface sample!!", 5.0f, ScreenMessageStyle.UPPER_CENTER);
-                    }
-                }
-                snackLabStatus = "Processing";
-                // This will hide the Activate event, and show the Deactivate event.
-                Events["ProcessEvent"].active = true;
-                //Events["DeactivateEvent"].active = true;
+                Vessel eva = FlightGlobals.ActiveVessel;
+                double got = eva.rootPart.RequestResource(soilResourceId, 1);
+                this.part.RequestResource(soilResourceId, got * -1);
+                Debug.Log("transfersoil got:" + got);
+                //AddSoil(this.part, got);
             }
             catch (Exception ex)
             {
-                Debug.Log("Snacks - ProcessEvent: " + ex.Message + ex.StackTrace);
+                Debug.Log("Snacks - TransferSnacks: " + ex.Message + ex.StackTrace);
             }
-        }
+        } 
 
         /*
          * Called after the scene is loaded.
          */
         public override void OnAwake()
         {
-            Debug.Log("SnackFactory OnAwake()");
+            try
+            {
+                PartResourceDefinition ec = PartResourceLibrary.Instance.GetDefinition("ElectricCharge");
+                elecResourceId = ec.id;
+                part.force_activate();
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("SnackLab OnAwake(): " + ex.Message + ex.StackTrace);
+            }
+        }
+
+        private void AddSoil(Part p, double value)
+        {
+            List<PartResource> resources = new List<PartResource>();
+            p.GetConnectedResources(soilResourceId, ResourceFlowMode.ALL_VESSEL, resources);
+            PartResource pr = resources.First();
+            pr.amount += value;
+            if (pr.amount > pr.maxAmount)
+                pr.amount = pr.maxAmount;
         }
 
         /*
@@ -92,14 +105,53 @@ namespace Snacks
          */
         public override void OnActive()
         {
-            Debug.Log("Snacks - Start SnackModuleActive");
+            try
+            {
+                
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("SnackLab OnActive(): " + ex.Message + ex.StackTrace);
+            }
         }
 
-        /*
-         * Called after OnAwake.
-         */
-        public override void OnStart(PartModule.StartState state)
+
+        public override void OnFixedUpdate()
         {
+            try
+            {
+                if (processingStatus == true)
+                {
+                    double elecReq = processingElecRate * TimeWarp.fixedDeltaTime;
+                    this.part.vessel.rootPart.RequestResource(elecResourceId, elecReq);
+                    
+                    double currentTime = Planetarium.GetUniversalTime();
+
+                    if(nextProcessingTime == 0){
+                        nextProcessingTime = currentTime + snackCompleteInterval;
+                        return;
+                    }
+                    if (currentTime > nextProcessingTime)
+                    {
+                        nextProcessingTime = currentTime + snackCompleteInterval;
+                        double soilGot = this.vessel.rootPart.RequestResource(soilResourceId, soilPerInterval);
+                        if (soilGot < soilPerInterval)
+                        {
+                            processingStatus = false;
+                            Events["ProcessEvent"].active = true;
+                        }
+                        else
+                        {
+                            this.vessel.rootPart.RequestResource(snacksResourceId, -1);
+                        }
+                    }
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("SnackLab OnFixedUpdate(): " + ex.Message + ex.StackTrace);
+            }
         }
 
 
@@ -108,7 +160,7 @@ namespace Snacks
          */
         public override string GetInfo()
         {
-            return "Generates snacks";
+            return "Converts soil into artificially flavored somewhat edible snacks.";
         }
 
         /*

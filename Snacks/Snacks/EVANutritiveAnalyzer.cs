@@ -97,7 +97,7 @@ namespace Snacks
             Events["GatherSoil"].active = true;
         }
 
-        public bool AddRemoveSoil(Part p, double value)
+        private bool AddRemoveSoil(Part p, double value)
         {
             Debug.Log("adding soil:" + value);
             List<PartResource> resources = new List<PartResource>();
@@ -111,7 +111,7 @@ namespace Snacks
                 pr.amount = pr.maxAmount;
                 return true;
             }
-            p.mass = kerbalMass + pr.amount * kerbalMass;
+            p.mass = Convert.ToSingle(kerbalMass + pr.amount * kerbalMass);
             return false;
         }
 
