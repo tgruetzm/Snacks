@@ -33,11 +33,11 @@
   <ItemGroup>
     <Reference Include="Assembly-CSharp, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>E:\KSP\KSP_dev\KSP_win\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <HintPath>E:\KSP\KSP_win\KSP_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>E:\KSP\KSP_dev\KSP_win\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>E:\KSP\KSP_win\KSP_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -47,7 +47,7 @@
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>E:\KSP\KSP_dev\KSP_win\KSP_Data\Managed\UnityEngine.dll</HintPath>
+      <HintPath>E:\KSP\KSP_win\KSP_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -66,6 +66,7 @@
     <Compile Include="SnackConfiguration.cs" />
     <Compile Include="SnackLab.cs" />
     <Compile Include="SnackSnapshot.cs" />
+    <Compile Include="SoilContainer.cs" />
     <Compile Include="SupplyWindow.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -79,11 +80,11 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>xcopy /y "$(TargetDir)$(ProjectName).dll" E:\KSP\KSP_dev\KSP_win\GameData\Snacks
-xcopy /s /y "$(ProjectDir)\Config\*" E:\KSP\KSP_dev\KSP_win\GameData\Snacks
-xcopy /s /y "$(ProjectDir)\Textures\*" E:\KSP\KSP_dev\KSP_win\GameData\Snacks\Textures
+    <PostBuildEvent>xcopy /y "$(TargetDir)$(ProjectName).dll" E:\KSP\KSP_win\GameData\Snacks
+xcopy /s /y "$(ProjectDir)\Config\*" E:\KSP\KSP_win\GameData\Snacks
+xcopy /s /y "$(ProjectDir)\Textures\*" E:\KSP\KSP_win\GameData\Snacks\Textures
 
-start E:\KSP\KSP_dev\KSP_win\KSP.exe</PostBuildEvent>
+start E:\KSP\KSP_win\KSP.exe</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

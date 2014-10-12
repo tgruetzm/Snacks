@@ -78,8 +78,8 @@ namespace Snacks
         {
             PartResourceDefinition snacksResource = PartResourceLibrary.Instance.GetDefinition("Snacks");
             snackResourceId = snacksResource.id;
-            PartResourceDefinition soilResource = PartResourceLibrary.Instance.GetDefinition("Soil");
-            soilResourceId = soilResource.id;
+            //PartResourceDefinition soilResource = PartResourceLibrary.Instance.GetDefinition("Soil");
+            //soilResourceId = soilResource.id;
             string file = IOUtils.GetFilePathFor(this.GetType(), "snacks.cfg");
             Debug.Log("loading file:" + file);
             node = ConfigNode.Load(file).GetNode("SNACKS");

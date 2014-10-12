@@ -43,33 +43,22 @@ namespace Snacks
         [KSPField(isPersistant = true)]
         public double nextProcessingTime = 0;
 
+        [KSPField(isPersistant = true, guiActive = true, guiName = "Snack Lab Status")]
+        public string snackLabStatus = "Idle";
+
         private double processingElecRate = 10;
-        private double snackCompleteInterval = 10;
-        private double snacksPerInterval = 1;
-        private double soilPerInterval = .01;
+        private double snackCompleteInterval = 60;
+        private double snacksPerInterval = 5;
+        private double soilPerInterval = .1;
+        private const double compareThreshold = 0.0001;
 
         [KSPEvent(guiActive = true, guiName = "Process Snacks")]
         public void ProcessEvent()
         {
             processingStatus = true;
+            snackLabStatus = "Processing";
             Events["ProcessEvent"].active = false;
         }
-        [KSPEvent(guiActiveUnfocused = true, unfocusedRange = 5f, guiName = "Transfer Soil to Lab")]
-        public void TransferSoil()
-        {
-            try
-            {
-                Vessel eva = FlightGlobals.ActiveVessel;
-                double got = eva.rootPart.RequestResource(soilResourceId, 1);
-                this.part.RequestResource(soilResourceId, got * -1);
-                Debug.Log("transfersoil got:" + got);
-                //AddSoil(this.part, got);
-            }
-            catch (Exception ex)
-            {
-                Debug.Log("Snacks - TransferSnacks: " + ex.Message + ex.StackTrace);
-            }
-        } 
 
         /*
          * Called after the scene is loaded.
@@ -88,42 +77,28 @@ namespace Snacks
             }
         }
 
-        private void AddSoil(Part p, double value)
-        {
-            List<PartResource> resources = new List<PartResource>();
-            p.GetConnectedResources(soilResourceId, ResourceFlowMode.ALL_VESSEL, resources);
-            PartResource pr = resources.First();
-            pr.amount += value;
-            if (pr.amount > pr.maxAmount)
-                pr.amount = pr.maxAmount;
-        }
-
-        /*
-         * Called when the part is activated/enabled. This usually occurs either when the craft
-         * is launched or when the stage containing the part is activated.
-         * You can activate your part manually by calling part.force_activate().
-         */
-        public override void OnActive()
-        {
-            try
-            {
-                
-            }
-            catch (Exception ex)
-            {
-                Debug.Log("SnackLab OnActive(): " + ex.Message + ex.StackTrace);
-            }
-        }
-
-
         public override void OnFixedUpdate()
         {
             try
             {
                 if (processingStatus == true)
                 {
+                    if (this.part.protoModuleCrew.Count < 2)
+                    {
+                        StopProcessing();
+                        Debug.Log("Not enough crew");
+                        return;
+                    }
+                        
+
                     double elecReq = processingElecRate * TimeWarp.fixedDeltaTime;
-                    this.part.vessel.rootPart.RequestResource(elecResourceId, elecReq);
+                    double got = this.part.vessel.rootPart.RequestResource(elecResourceId, elecReq);
+                    if (elecReq - got > compareThreshold)
+                    {
+                        Debug.Log("not enough elec" + got);
+                        StopProcessing();
+                        return;
+                    }
                     
                     double currentTime = Planetarium.GetUniversalTime();
 
@@ -135,14 +110,17 @@ namespace Snacks
                     {
                         nextProcessingTime = currentTime + snackCompleteInterval;
                         double soilGot = this.vessel.rootPart.RequestResource(soilResourceId, soilPerInterval);
-                        if (soilGot < soilPerInterval)
+
+                        if (soilPerInterval - soilGot > compareThreshold)
                         {
-                            processingStatus = false;
-                            Events["ProcessEvent"].active = true;
+                            Debug.Log("soilgot < interval" + soilGot);
+                            this.vessel.rootPart.RequestResource(soilResourceId, soilGot);
+                            StopProcessing();
+                            return;
                         }
                         else
                         {
-                            this.vessel.rootPart.RequestResource(snacksResourceId, -1);
+                            this.vessel.rootPart.RequestResource(snacksResourceId, -1 * snacksPerInterval);
                         }
                     }
 
@@ -152,6 +130,13 @@ namespace Snacks
             {
                 Debug.Log("SnackLab OnFixedUpdate(): " + ex.Message + ex.StackTrace);
             }
+        }
+
+        private void StopProcessing()
+        {
+            processingStatus = false;
+            snackLabStatus = "Idle";
+            Events["ProcessEvent"].active = true;
         }
 
 

@@ -31,7 +31,7 @@ using UnityEngine;
 
 namespace Snacks
 {
-    [KSPAddon(KSPAddon.Startup.Flight, false)]
+    //[KSPAddon(KSPAddon.Startup.Flight, false)]
     public class FlightController : MonoBehaviour
     {
         System.Random random = new System.Random();

@@ -188,7 +188,7 @@ namespace Snacks
                 {
                     System.Random rand = new System.Random();
                     snackTime = rand.NextDouble() * snackFrequency + currentTime;
-                    Debug.Log("Snack time!  Next Snack Time!:" + currentTime);
+                    Debug.Log("Snack time!  Next Snack Time!:" + snackTime);
                     EatSnacks();
                     SnackSnapshot.Instance().SetRebuildSnapshot();
                 }
@@ -256,7 +256,7 @@ namespace Snacks
                         else
                             repLoss = fastingKerbals;
 
-                        Reputation.Instance.AddReputation(Convert.ToSingle(-1 * repLoss), fastingKerbals + " Kerbals out of snacks!");
+                        Reputation.Instance.AddReputation(Convert.ToSingle(-1 * repLoss), TransactionReasons.Any);
                         ScreenMessages.PostScreenMessage(fastingKerbals + " Kerbals didn't have any snacks(reputation decreased by " + Convert.ToInt32(repLoss) + ")", 5, ScreenMessageStyle.UPPER_LEFT);
                     }
                     else

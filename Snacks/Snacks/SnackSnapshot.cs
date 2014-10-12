@@ -33,7 +33,7 @@ namespace Snacks
             {
                 if (vessels == null)
                 {
-                    Debug.Log("rebuilding snapshot");
+                    //Debug.Log("rebuilding snapshot");
                     int snackResourceId = SnackConfiguration.Instance().SnackResourceId;
                     vessels = new Dictionary<int, List<ShipSupply>>();
                     outOfSnacks = new Dictionary<Guid, bool>();
