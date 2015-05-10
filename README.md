@@ -8,7 +8,7 @@ Snacks requires the use of module manager.  The latest version is provided in th
 
 v0.3.4 Alpha Features:
 ----------------------------
--Snack production.  Snacks can now be produced via the Lab module.  Ore and lots of electricity are required inputs.
+-Snack production.  Snacks can now be produced via the Lab module with the Snack Cultivator.  Ore and lots of electricity are required inputs.
 
 -Snacks per meal now increased to 1(was .5).  I felt snack consumption was a bit low previously.  This essentially doubles the rate of consumption, but now snacks can be created from Ore, so it should still allow long duration missions.
 
