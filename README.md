@@ -12,6 +12,8 @@ v0.3.4 Alpha Features:
 
 -Snacks per meal now increased to 1(was .5).  I felt snack consumption was a bit low previously.  This essentially doubles the rate of consumption, but now snacks can be created from Ore, so it should still allow long duration missions.
 
+-Snacks are now massless!  It's either that or I'd have to increase the density significantly to balance out the Ore->Snack conversion.
+
 v0.3.1 Alpha Features:
 ----------------------------
 -Fixed the bug where the supply window would show incorrect data after loading a new save file.
