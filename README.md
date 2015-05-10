@@ -4,7 +4,13 @@ Snacks is a Kerbal Space Program mod that adds a simple life support system base
 
 Requirements:
 ----------------------------
-Snacks requires the use of module manager v2.2.1.  The latest version is provided in the release package.
+Snacks requires the use of module manager.  The latest version is provided in the release package.
+
+v0.3.4 Alpha Features:
+----------------------------
+-Snack production.  Snacks can now be produced via the Lab module.  Ore and lots of electricity are required inputs.
+
+-Snacks per meal now increased to 1(was .5).  I felt snack consumption was a bit low previously.  This essentially doubles the rate of consumption, but now snacks can be created from Ore, so it should still allow long duration missions.
 
 v0.3.1 Alpha Features:
 ----------------------------
