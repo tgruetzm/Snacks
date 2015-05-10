@@ -275,7 +275,7 @@ namespace Snacks
 
         private void SetVesselOutOfSnacks(Vessel v)
         {
-            v.GetVesselCrew()[0].courage = 0;
+            //v.GetVesselCrew()[0].
 
             //Debug.Log(pv.ctrlState);
         }
